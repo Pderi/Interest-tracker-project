@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 // 可以通过props传入效果类型，默认使用gradient
 const props = withDefaults(defineProps<{
@@ -294,25 +294,14 @@ function initMatrix() {
   }
 }
 
-onMounted(() => {
-  if (props.effectType === 'matrix') {
-    setTimeout(() => {
-      const cleanup = initMatrix()
-      if (cleanup) {
-        onUnmounted(() => cleanup())
-      }
-    }, 100)
-  } else if (props.effectType === 'network') {
-    setTimeout(() => {
-      const cleanup = initNetwork()
-      if (cleanup) {
-        onUnmounted(() => cleanup())
-      }
-    }, 100)
-  }
-})
+let cleanupFn: (() => void) | null = null
 
-watch(() => props.effectType, (newType) => {
+function startEffect(type: string) {
+  // 先清理之前的
+  if (cleanupFn) {
+    cleanupFn()
+    cleanupFn = null
+  }
   if (matrixAnimationId) {
     cancelAnimationFrame(matrixAnimationId)
     matrixAnimationId = null
@@ -321,25 +310,29 @@ watch(() => props.effectType, (newType) => {
     cancelAnimationFrame(networkAnimationId)
     networkAnimationId = null
   }
-  
-  if (newType === 'matrix') {
-    setTimeout(() => {
-      const cleanup = initMatrix()
-      if (cleanup) {
-        onUnmounted(() => cleanup())
-      }
-    }, 100)
-  } else if (newType === 'network') {
-    setTimeout(() => {
-      const cleanup = initNetwork()
-      if (cleanup) {
-        onUnmounted(() => cleanup())
-      }
-    }, 100)
-  }
+
+  // 使用 nextTick 确保 DOM 已渲染
+  nextTick(() => {
+    if (type === 'matrix') {
+      cleanupFn = initMatrix() || null
+    } else if (type === 'network') {
+      cleanupFn = initNetwork() || null
+    }
+  })
+}
+
+onMounted(() => {
+  startEffect(props.effectType)
+})
+
+watch(() => props.effectType, (newType) => {
+  startEffect(newType)
 })
 
 onUnmounted(() => {
+  if (cleanupFn) {
+    cleanupFn()
+  }
   if (matrixAnimationId) {
     cancelAnimationFrame(matrixAnimationId)
   }

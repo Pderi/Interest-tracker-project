@@ -29,8 +29,12 @@ export interface PageResult<T> {
 export interface UserInfo {
   id: number
   username: string
-  email?: string
+  nickname?: string
   avatar?: string
+  email?: string
+  phone?: string
+  status?: number
+  createTime?: string
 }
 
 /**
@@ -44,8 +48,5 @@ export interface LoginReq {
 /**
  * 登录响应
  */
-export interface LoginRes {
-  token: string
-  userInfo: UserInfo
-}
+export type LoginRes = string
 

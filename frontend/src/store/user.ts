@@ -4,11 +4,16 @@ import type { UserInfo } from '@/types/api'
 import { getUserInfo, logout as logoutApi } from '@/api/user'
 import router from '@/router'
 
+// 获取 token（优先 localStorage，其次 sessionStorage）
+function getStoredToken(): string {
+  return localStorage.getItem('token') || sessionStorage.getItem('token') || ''
+}
+
 export const useUserStore = defineStore('user', () => {
-  const token = ref<string>(localStorage.getItem('token') || '')
+  const token = ref<string>(getStoredToken())
   const userInfo = ref<UserInfo | null>(null)
 
-  // 设置token
+  // 设置token（默认存 localStorage，Login 页面会根据"记住我"调整）
   function setToken(newToken: string) {
     token.value = newToken
     localStorage.setItem('token', newToken)
@@ -41,6 +46,7 @@ export const useUserStore = defineStore('user', () => {
       token.value = ''
       userInfo.value = null
       localStorage.removeItem('token')
+      sessionStorage.removeItem('token')
       router.push('/login')
     }
   }
