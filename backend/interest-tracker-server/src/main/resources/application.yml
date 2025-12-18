@@ -1,14 +1,16 @@
+debug: false
+
 spring:
   application:
     name: interest-tracker
-  
+
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/interest_tracker?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
     username: root
     password: 123456
-  
+
   # Jackson 配置
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -40,4 +42,6 @@ logging:
   level:
     root: INFO
     com.interest.tracker: DEBUG
+    org.springframework.beans.factory.support: DEBUG
+    org.springframework.context.support.PostProcessorRegistrationDelegate: DEBUG
 

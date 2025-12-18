@@ -14,19 +14,22 @@
     <description>个人兴趣内容管理与分析平台</description>
 
     <properties>
-        <java.version>22</java.version>
-        <maven.compiler.source>22</maven.compiler.source>
-        <maven.compiler.target>22</maven.compiler.target>
+        <!-- Spring Boot 3.0.x / Spring 6.0：编译目标统一为 Java 17（官方支持最佳） -->
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- 依赖版本 -->
-        <spring-boot.version>3.3.0</spring-boot.version>
-        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <!-- 统一使用 Spring Boot 3.0.x（Spring 6.0），与 MyBatis-Plus 3.5.3.2 官方兼容 -->
+        <spring-boot.version>3.0.10</spring-boot.version>
+        <mybatis-plus.version>3.5.3.2</mybatis-plus.version>
         <mysql.version>8.0.33</mysql.version>
         <lombok.version>1.18.32</lombok.version>
         <hutool.version>5.8.23</hutool.version>
         <swagger.version>2.3.0</swagger.version>
+        <spring-security.version>6.3.0</spring-security.version>
+        <java-jwt.version>4.4.0</java-jwt.version>
     </properties>
 
     <modules>
@@ -45,12 +48,13 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- MyBatis-Plus -->
+            <!-- MyBatis-Plus Starter -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
+
 
             <!-- MySQL -->
             <dependency>
@@ -78,6 +82,20 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${swagger.version}</version>
+            </dependency>
+
+            <!-- Spring Security Crypto（用于密码加密） -->
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-crypto</artifactId>
+                <version>${spring-security.version}</version>
+            </dependency>
+
+            <!-- JWT -->
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>${java-jwt.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
