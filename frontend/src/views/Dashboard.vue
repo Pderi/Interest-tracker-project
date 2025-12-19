@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { markRaw } from 'vue'
 import {
   Camera,
@@ -80,6 +80,7 @@ import {
   Document,
   ArrowRight,
 } from '@element-plus/icons-vue'
+import { getMoviePage } from '@/api/movie'
 
 const stats = ref([
   {
@@ -91,7 +92,7 @@ const stats = ref([
   },
   {
     label: '影视记录',
-    value: '42',
+    value: '—',
     desc: '部作品',
     icon: markRaw(VideoPlay),
     iconBg: 'from-pink-500 to-pink-600',
@@ -111,6 +112,27 @@ const stats = ref([
     iconBg: 'from-green-500 to-green-600',
   },
 ])
+
+async function loadMovieStats() {
+  try {
+    // 总记录数
+    const all = await getMoviePage({ pageNo: 1, pageSize: 1 })
+    const total = all.data.total || 0
+
+    // 已看数量
+    const watched = await getMoviePage({ pageNo: 1, pageSize: 1, watchStatus: 3 })
+    const watchedTotal = watched.data.total || 0
+
+    stats.value[1].value = `${total}`
+    stats.value[1].desc = `已看 ${watchedTotal} 部`
+  } catch {
+    // ignore, 保持占位数据
+  }
+}
+
+onMounted(() => {
+  loadMovieStats()
+})
 
 // 最近活动数据
 const recentActivities = ref([

@@ -120,9 +120,16 @@ public class MovieServiceImpl implements MovieService {
             throw exception(MOVIE_RECORD_NOT_OWNER);
         }
 
-        // 3. 应用更新字段
+        // 3. 如果请求中携带了海报地址，顺带更新影视基础信息的封面
+        if (reqVO.getPosterUrl() != null) {
+            MovieDO movieDO = validateMovieExists(recordDO.getMovieId());
+            movieDO.setPosterUrl(reqVO.getPosterUrl());
+            movieMapper.updateById(movieDO);
+        }
+
+        // 4. 应用记录更新字段
         applyRecordUpdate(reqVO, recordDO);
-        // 4. 根据业务规则自动填充字段
+        // 5. 根据业务规则自动填充字段
         autoFillWatchDateIfNeeded(reqVO, recordDO);
 
         movieRecordMapper.updateById(recordDO);

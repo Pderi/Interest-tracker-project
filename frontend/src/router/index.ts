@@ -45,6 +45,14 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'movie/:id',
+        name: 'MovieDetail',
+        component: () => import('@/views/Movie/Detail.vue'),
+        meta: {
+          title: '影视详情',
+        },
+      },
+      {
         path: 'music',
         name: 'Music',
         component: () => import('@/views/Music/index.vue'),

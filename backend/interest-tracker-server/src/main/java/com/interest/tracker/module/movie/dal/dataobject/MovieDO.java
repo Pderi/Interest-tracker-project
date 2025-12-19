@@ -1,6 +1,7 @@
 package com.interest.tracker.module.movie.dal.dataobject;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.interest.tracker.framework.mybatis.core.dataobject.BaseDO;
@@ -71,6 +72,7 @@ public class MovieDO extends BaseDO {
     /**
      * 海报URL
      */
+    @TableField("poster_url")
     private String posterUrl;
 
     /**

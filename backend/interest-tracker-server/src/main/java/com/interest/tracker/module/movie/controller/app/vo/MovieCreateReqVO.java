@@ -33,6 +33,9 @@ public class MovieCreateReqVO {
     @Schema(description = "个人评分（0-10）", example = "8.5")
     private BigDecimal personalRating;
 
+    @Schema(description = "海报URL（手动创建时可选）", example = "https://example.com/poster.jpg")
+    private String posterUrl;
+
     @Schema(description = "标签（逗号分隔）", example = "动作,悬疑")
     private String tags;
 

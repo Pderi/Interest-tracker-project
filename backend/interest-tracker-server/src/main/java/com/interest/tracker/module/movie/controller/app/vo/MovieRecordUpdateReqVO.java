@@ -51,5 +51,8 @@ public class MovieRecordUpdateReqVO {
     @Schema(description = "标签（逗号分隔）", example = "动作,悬疑")
     private String tags;
 
+    @Schema(description = "海报URL（可选）", example = "https://example.com/poster.jpg")
+    private String posterUrl;
+
 }
 
