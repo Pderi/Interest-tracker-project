@@ -138,67 +138,52 @@ CREATE TABLE IF NOT EXISTS `movie_record` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='观看记录表';
 
 -- ========================================
--- 音乐相关表
+-- 音乐相关表（以专辑为单位）
 -- ========================================
 
--- 歌曲表
-CREATE TABLE IF NOT EXISTS `song` (
-    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '歌曲ID',
-    `title` VARCHAR(255) NOT NULL COMMENT '歌曲名',
-    `artist` VARCHAR(128) DEFAULT NULL COMMENT '歌手',
-    `album` VARCHAR(255) DEFAULT NULL COMMENT '专辑',
-    `duration` INT DEFAULT NULL COMMENT '时长（秒）',
-    `genre` VARCHAR(128) DEFAULT NULL COMMENT '类型',
-    `source_url` VARCHAR(512) DEFAULT NULL COMMENT '来源URL',
-    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
-    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
-    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
-    KEY `idx_artist` (`artist`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='歌曲表';
-
--- 歌单表
-CREATE TABLE IF NOT EXISTS `playlist` (
-    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '歌单ID',
-    `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `name` VARCHAR(128) NOT NULL COMMENT '歌单名称',
-    `description` TEXT DEFAULT NULL COMMENT '歌单描述',
+-- 专辑表
+CREATE TABLE IF NOT EXISTS `album` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '专辑ID',
+    `title` VARCHAR(255) NOT NULL COMMENT '专辑名称',
+    `artist` VARCHAR(255) NOT NULL COMMENT '艺术家/乐队',
+    `release_year` INT DEFAULT NULL COMMENT '发行年份',
+    `genre` VARCHAR(128) DEFAULT NULL COMMENT '音乐类型（摇滚、流行等，逗号分隔）',
+    `description` TEXT DEFAULT NULL COMMENT '专辑简介',
     `cover_url` VARCHAR(512) DEFAULT NULL COMMENT '封面URL',
-    `song_count` INT NOT NULL DEFAULT 0 COMMENT '歌曲数量',
+    `total_tracks` INT DEFAULT NULL COMMENT '总曲目数',
+    `duration` INT DEFAULT NULL COMMENT '总时长（秒）',
     `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
-    KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='歌单表';
+    KEY `idx_title` (`title`),
+    KEY `idx_artist` (`artist`),
+    KEY `idx_release_year` (`release_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='专辑表';
 
--- 歌单歌曲关联表
-CREATE TABLE IF NOT EXISTS `playlist_song` (
-    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关联ID',
-    `playlist_id` BIGINT NOT NULL COMMENT '歌单ID',
-    `song_id` BIGINT NOT NULL COMMENT '歌曲ID',
-    `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序',
-    `add_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '添加时间',
-    UNIQUE KEY `uk_playlist_song` (`playlist_id`, `song_id`),
-    KEY `idx_playlist_id` (`playlist_id`),
-    KEY `idx_song_id` (`song_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='歌单歌曲关联表';
-
--- 播放记录表
-CREATE TABLE IF NOT EXISTS `play_record` (
+-- 听歌记录表
+CREATE TABLE IF NOT EXISTS `album_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `song_id` BIGINT NOT NULL COMMENT '歌曲ID',
-    `play_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '播放时间',
-    `duration` INT DEFAULT NULL COMMENT '播放时长（秒）',
+    `album_id` BIGINT NOT NULL COMMENT '专辑ID',
+    `listen_status` TINYINT NOT NULL DEFAULT 1 COMMENT '听歌状态：1-想听 2-在听 3-已听 4-弃听',
+    `personal_rating` DECIMAL(3,1) DEFAULT NULL COMMENT '个人评分（0-10）',
+    `listen_date` DATE DEFAULT NULL COMMENT '听歌日期',
+    `listen_count` INT DEFAULT NULL COMMENT '听歌次数',
+    `comment` TEXT DEFAULT NULL COMMENT '评价',
+    `tags` VARCHAR(512) DEFAULT NULL COMMENT '标签（逗号分隔）',
     `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    UNIQUE KEY `uk_user_album` (`user_id`, `album_id`),
     KEY `idx_user_id` (`user_id`),
-    KEY `idx_song_id` (`song_id`),
-    KEY `idx_play_time` (`play_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='播放记录表';
+    KEY `idx_album_id` (`album_id`),
+    KEY `idx_listen_status` (`listen_status`),
+    KEY `idx_listen_date` (`listen_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='听歌记录表';
 
 -- ========================================
 -- 球赛相关表
