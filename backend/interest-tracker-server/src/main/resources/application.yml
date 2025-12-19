@@ -3,7 +3,16 @@ debug: false
 spring:
   application:
     name: interest-tracker
-
+  http:
+    proxy:
+      # 白鲸加速器代理配置（取消注释并配置正确的端口）
+      # 如何查看白鲸加速器的代理端口：
+      # 1. 打开白鲸加速器软件
+      # 2. 查看设置或配置页面中的"本地代理"或"HTTP代理"端口
+      # 3. 常见端口：7890、10809、10808、1080
+      # 4. 如果找不到，可以尝试依次测试这些端口
+      host: 127.0.0.1        # 白鲸加速器本地代理地址（通常是 127.0.0.1）
+      port: 7890   # 白鲸加速器代理端口（请根据实际端口修改，常见：7890）
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -36,6 +45,34 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
+
+# TMDB API 配置
+tmdb:
+  api:
+    # 方式一：使用 Read Access Token（推荐，更安全，支持 v3/v4 API）
+    read-access-token: eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzNTQyZjI1NDc0N2MwNjM3M2IyYTFiMTkzZjI2ZTNjOSIsIm5iZiI6MTc2NjExNDk2My4zNiwic3ViIjoiNjk0NGM2OTM4MDZiNzVlODg3MmZiMjIwIiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.Y2NEeD2VX8CO_AzDoROEaOFyiiKUMDUrdG7SN5tyZf8 # 从环境变量读取，或在此处直接配置
+    # 方式二：使用 API Key（备选方案，如果未配置 token 则使用 key）
+    key: ${TMDB_API_KEY:3542f254747c06373b2a1b193f26e3c9}  # 从环境变量读取，或使用默认值
+    # 其他配置
+    base-url: https://api.themoviedb.org/3
+    image-base-url: https://image.tmdb.org/t/p/w500
+    language: zh-CN
+    timeout: 5000
+  # Mock 配置（网络无法访问 TMDB 时使用）
+  mock:
+    enabled: false  # 设置为 true 启用 Mock 模式（使用模拟数据）
+
+# 国内 API 配置（作为 TMDB 的备选方案）
+domestic:
+  api:
+    enabled: true   # 启用国内 API（国内网络建议开启）
+    type: wmdb      # API 类型：wmdb（无需 key 的公开接口）
+    base-url: https://api.wmdb.tv  # WMDB 默认地址
+    api-key: ""     # 当前 WMDB 不需要 key，留空
+
+
+
+
 
 # 日志配置
 logging:

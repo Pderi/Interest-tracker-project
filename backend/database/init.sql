@@ -90,8 +90,10 @@ CREATE TABLE IF NOT EXISTS `photo_album_photo` (
 -- ========================================
 
 -- 影视表
+DROP TABLE IF EXISTS `movie`;
 CREATE TABLE IF NOT EXISTS `movie` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '影视ID',
+    `tmdb_id` BIGINT DEFAULT NULL COMMENT 'TMDB ID（用于关联TMDB数据）',
     `title` VARCHAR(255) NOT NULL COMMENT '标题',
     `type` TINYINT NOT NULL COMMENT '类型：1-电影 2-电视剧',
     `genre` VARCHAR(128) DEFAULT NULL COMMENT '类型（动作、科幻等，逗号分隔）',
@@ -108,9 +110,9 @@ CREATE TABLE IF NOT EXISTS `movie` (
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
     KEY `idx_type` (`type`),
-    KEY `idx_release_year` (`release_year`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='影视表';
-
+    KEY `idx_release_year` (`release_year`),
+    KEY `idx_tmdb_id` (`tmdb_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='影视表';
 -- 观看记录表
 CREATE TABLE IF NOT EXISTS `movie_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',

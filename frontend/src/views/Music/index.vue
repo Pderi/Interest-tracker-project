@@ -43,7 +43,7 @@
             <div class="flex-1 min-w-0">
               <h3 class="text-lg sm:text-xl font-semibold text-white mb-1 line-clamp-1">{{ music.title }}</h3>
               <p class="text-sm sm:text-base text-[#00d4ff]/70 mb-2">{{ music.artist }}</p>
-              <p class="text-xs sm:text-sm text-[#00d4ff]/50 mb-3">{{ music.album }}</p>
+              <p class="text-xs sm:text-sm text-[#00d4ff]/50 mb-3">{{ music.year }} · {{ music.trackCount }} 首</p>
               
               <!-- 标签 -->
               <div class="flex flex-wrap gap-2">
@@ -80,58 +80,64 @@
 import { ref } from 'vue'
 import { Plus, Headset, VideoPlay } from '@element-plus/icons-vue'
 
-// 假数据 - 使用可用的图片链接
+// 假数据 - 专辑列表
 const musicList = ref([
   {
     id: 1,
-    title: 'Bohemian Rhapsody',
+    title: 'A Night at the Opera',
     artist: 'Queen',
-    album: 'A Night at the Opera',
+    year: '1975',
+    trackCount: 12,
     cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop',
     tags: ['摇滚', '经典', '史诗'],
     imageError: false,
   },
   {
     id: 2,
-    title: 'Blinding Lights',
+    title: 'After Hours',
     artist: 'The Weeknd',
-    album: 'After Hours',
+    year: '2020',
+    trackCount: 14,
     cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop',
     tags: ['流行', '电子', 'R&B'],
     imageError: false,
   },
   {
     id: 3,
-    title: 'Shape of You',
+    title: '÷ (Divide)',
     artist: 'Ed Sheeran',
-    album: '÷ (Deluxe)',
+    year: '2017',
+    trackCount: 16,
     cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop',
     tags: ['流行', '民谣', '舞曲'],
     imageError: false,
   },
   {
     id: 4,
-    title: 'Someone Like You',
+    title: '21',
     artist: 'Adele',
-    album: '21',
+    year: '2011',
+    trackCount: 11,
     cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop',
     tags: ['流行', '灵魂', '抒情'],
     imageError: false,
   },
   {
     id: 5,
-    title: 'Stairway to Heaven',
+    title: 'Led Zeppelin IV',
     artist: 'Led Zeppelin',
-    album: 'Led Zeppelin IV',
+    year: '1971',
+    trackCount: 8,
     cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop',
     tags: ['摇滚', '经典', '前卫'],
     imageError: false,
   },
   {
     id: 6,
-    title: 'Billie Jean',
+    title: 'Thriller',
     artist: 'Michael Jackson',
-    album: 'Thriller',
+    year: '1982',
+    trackCount: 9,
     cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop',
     tags: ['流行', '放克', '舞曲'],
     imageError: false,
@@ -139,7 +145,7 @@ const musicList = ref([
 ])
 
 function handleAdd() {
-  console.log('添加音乐记录')
+  console.log('添加专辑记录')
 }
 
 function handleImageError(musicId: number) {

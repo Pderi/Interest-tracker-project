@@ -55,6 +55,13 @@
                 <version>${mybatis-plus.version}</version>
             </dependency>
 
+            <!-- MyBatis-Plus-Join -->
+            <dependency>
+                <groupId>com.github.yulichang</groupId>
+                <artifactId>mybatis-plus-join</artifactId>
+                <version>1.4.6</version>
+            </dependency>
+
 
             <!-- MySQL -->
             <dependency>
