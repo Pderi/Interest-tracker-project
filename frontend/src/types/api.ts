@@ -129,3 +129,83 @@ export interface LoginReq {
  */
 export type LoginRes = string
 
+/**
+ * 专辑分页列表项
+ */
+export interface AlbumPageItem {
+  recordId: number
+  albumId: number
+  title: string
+  artist: string
+  releaseYear?: number
+  coverUrl?: string
+  listenStatus: number // 1 想听 2 在听 3 已听 4 弃听
+  personalRating?: number
+  listenDate?: string
+  listenCount?: number
+  tags?: string
+  createTime: string
+}
+
+/**
+ * 专辑详情
+ */
+export interface AlbumDetail {
+  album: {
+    id: number
+    title: string
+    artist: string
+    releaseYear?: number
+    genre?: string
+    description?: string
+    coverUrl?: string
+    totalTracks?: number
+    duration?: number
+  }
+  record?: {
+    id: number
+    listenStatus: number
+    personalRating?: number
+    listenDate?: string
+    listenCount?: number
+    comment?: string
+    tags?: string
+  } | null
+}
+
+/**
+ * 专辑创建请求（手动录入）
+ */
+export interface AlbumCreateReq {
+  title: string
+  artist: string
+  releaseYear?: number
+  genre?: string
+  description?: string
+  coverUrl?: string
+  totalTracks?: number
+  duration?: number
+  listenStatus?: number
+  personalRating?: number
+  tags?: string
+  comment?: string
+}
+
+export interface AlbumCreateRes {
+  albumId: number
+  recordId: number
+}
+
+/**
+ * 听歌记录更新
+ */
+export interface AlbumRecordUpdateReq {
+  id?: number
+  listenStatus?: number
+  personalRating?: number
+  listenDate?: string
+  listenCount?: number
+  comment?: string
+  tags?: string
+}
+

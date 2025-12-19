@@ -1,0 +1,49 @@
+import request from '@/utils/request'
+import type {
+  CommonResult,
+  PageResult,
+  AlbumPageItem,
+  AlbumDetail,
+  AlbumCreateReq,
+  AlbumCreateRes,
+  AlbumRecordUpdateReq,
+} from '@/types/api'
+
+// 分页获取当前用户的专辑 + 听歌记录列表
+export function getAlbumPage(params: {
+  pageNo?: number
+  pageSize?: number
+  status?: number
+  artist?: string
+  genre?: string
+  tag?: string
+  keyword?: string
+  startListenDate?: string
+  endListenDate?: string
+  sort?: string
+}) {
+  return request.get<CommonResult<PageResult<AlbumPageItem>>>('/api/music/albums', {
+    params,
+  })
+}
+
+// 创建专辑记录（含听歌记录）
+export function createAlbum(data: AlbumCreateReq) {
+  return request.post<CommonResult<AlbumCreateRes>>('/api/music/albums', data)
+}
+
+// 获取专辑详情
+export function getAlbumDetail(id: number) {
+  return request.get<CommonResult<AlbumDetail>>(`/api/music/albums/${id}`)
+}
+
+// 更新听歌记录
+export function updateAlbumRecord(recordId: number, data: AlbumRecordUpdateReq) {
+  return request.put<CommonResult<boolean>>(`/api/music/albums/records/${recordId}`, data)
+}
+
+// 删除听歌记录
+export function deleteAlbumRecord(recordId: number) {
+  return request.delete<CommonResult<boolean>>(`/api/music/albums/records/${recordId}`)
+}
+

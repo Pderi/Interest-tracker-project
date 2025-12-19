@@ -61,6 +61,14 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'music/:id',
+        name: 'MusicDetail',
+        component: () => import('@/views/Music/Detail.vue'),
+        meta: {
+          title: '专辑详情',
+        },
+      },
+      {
         path: 'match',
         name: 'Match',
         component: () => import('@/views/Match/index.vue'),
