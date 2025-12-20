@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Camera, VideoPlay, Headset, Trophy, Clock } from '@element-plus/icons-vue'
+import { Camera, VideoPlay, Headset, Trophy, Document, Location, Clock } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 // 假数据
@@ -99,44 +99,89 @@ const timelineItems = ref([
     type: 'photo',
     title: '日落时分',
     description: '在海岸边拍摄的美丽日落，天空被染成了橙红色。',
-    date: '2024-01-15',
+    date: '2025-01-15',
     tags: ['风景', '日落', '海岸'],
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+    image: 'https://picsum.photos/800/400?random=1',
   },
   {
     id: 2,
-    type: 'movie',
-    title: '星际穿越',
-    description: '重新观看了这部经典的科幻电影，依然震撼。',
-    date: '2024-01-14',
-    tags: ['科幻', '剧情'],
+    type: 'book',
+    title: '读完了《百年孤独》',
+    description: '一部震撼人心的魔幻现实主义巨作，马尔克斯的想象力令人叹为观止。',
+    date: '2025-01-14',
+    tags: ['魔幻现实主义', '文学经典'],
     rating: 9.5,
   },
   {
     id: 3,
+    type: 'travel',
+    title: '去了北京',
+    description: '故宫和天坛都太震撼了，感受到了深厚的历史底蕴。',
+    date: '2025-01-10',
+    tags: ['国内', '历史文化', '城市'],
+    image: 'https://picsum.photos/800/400?random=2',
+  },
+  {
+    id: 4,
+    type: 'concert',
+    title: '周杰伦演唱会',
+    description: '现场氛围太棒了，经典歌曲一首接一首，全场大合唱！',
+    date: '2024-12-25',
+    tags: ['流行', '华语'],
+    rating: 9.5,
+  },
+  {
+    id: 5,
+    type: 'movie',
+    title: '星际穿越',
+    description: '重新观看了这部经典的科幻电影，依然震撼。',
+    date: '2024-12-19',
+    tags: ['科幻', '剧情'],
+    rating: 9.5,
+  },
+  {
+    id: 6,
     type: 'music',
     title: 'Bohemian Rhapsody',
     artist: 'Queen',
     description: '经典中的经典，每次听都有新的感受。',
-    date: '2024-01-13',
+    date: '2024-12-18',
     tags: ['摇滚', '经典'],
   },
   {
-    id: 4,
+    id: 7,
+    type: 'book',
+    title: '读完了《1984》',
+    description: '对极权主义的深刻警示，至今仍具有强烈的现实意义。',
+    date: '2024-12-15',
+    tags: ['反乌托邦', '政治'],
+    rating: 9.8,
+  },
+  {
+    id: 8,
+    type: 'travel',
+    title: '去了杭州西湖',
+    description: '西湖的美景让人流连忘返，特别是断桥残雪。',
+    date: '2024-12-10',
+    tags: ['国内', '自然风光', '城市'],
+    image: 'https://picsum.photos/800/400?random=3',
+  },
+  {
+    id: 9,
     type: 'match',
     title: '曼城 vs 利物浦',
     description: '精彩的英超对决，最终3-2结束。',
-    date: '2024-01-12',
+    date: '2024-12-05',
     tags: ['足球', '英超'],
   },
   {
-    id: 5,
+    id: 10,
     type: 'photo',
     title: '城市夜景',
     description: '从山顶俯瞰整个城市的夜景，灯火通明。',
-    date: '2024-01-11',
+    date: '2024-12-01',
     tags: ['城市', '夜景'],
-    image: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800',
+    image: 'https://picsum.photos/800/400?random=4',
   },
 ])
 
@@ -147,6 +192,9 @@ function getTypeIcon(type: string) {
     photo: { icon: Camera, class: 'text-[#00d4ff]' },
     movie: { icon: VideoPlay, class: 'text-[#00d4ff]' },
     music: { icon: Headset, class: 'text-[#00d4ff]' },
+    book: { icon: Document, class: 'text-[#00d4ff]' },
+    travel: { icon: Location, class: 'text-[#00d4ff]' },
+    concert: { icon: Headset, class: 'text-[#00d4ff]' },
     match: { icon: Trophy, class: 'text-[#00d4ff]' },
   }
   return map[type] || { icon: Clock, class: 'text-[#00d4ff]' }
@@ -157,6 +205,9 @@ function getTypeLabel(type: string) {
     photo: '摄影',
     movie: '影视',
     music: '音乐',
+    book: '阅读',
+    travel: '旅游',
+    concert: '演唱会',
     match: '球赛',
   }
   return map[type] || type

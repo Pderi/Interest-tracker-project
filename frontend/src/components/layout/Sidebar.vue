@@ -1,14 +1,14 @@
 <template>
   <aside class="sidebar w-80 lg:w-96 backdrop-blur-xl bg-gradient-to-b from-[#1a1a2e]/70 via-[#16213e]/70 to-[#0f3460]/70 border-r border-[#00d4ff]/20 shadow-2xl shadow-[#00d4ff]/10">
     <div class="p-6">
-      <div class="mb-8">
-        <h2 class="text-xs font-semibold text-[#00d4ff]/60 uppercase tracking-wider mb-4 px-2 neon-text flicker">导航</h2>
+      <div class="mb-6">
+        <h2 class="text-xs font-semibold text-[#00d4ff]/60 uppercase tracking-wider mb-4 px-2">导航</h2>
       </div>
       <el-menu
         :default-active="activeMenu"
         router
         class="border-0 bg-transparent"
-        text-color="rgba(226, 232, 240, 0.6)"
+        text-color="rgba(226, 232, 240, 0.8)"
         active-text-color="#00d4ff"
       >
         <el-menu-item index="/dashboard" class="!rounded-xl !mb-3 !h-14 !text-base">
@@ -29,6 +29,21 @@
         <el-menu-item index="/music" class="!rounded-xl !mb-3 !h-14 !text-base">
           <el-icon class="!text-xl"><Headset /></el-icon>
           <span class="ml-3">音乐</span>
+        </el-menu-item>
+
+        <el-menu-item index="/book" class="!rounded-xl !mb-3 !h-14 !text-base">
+          <el-icon class="!text-xl"><Document /></el-icon>
+          <span class="ml-3">阅读</span>
+        </el-menu-item>
+
+        <el-menu-item index="/travel" class="!rounded-xl !mb-3 !h-14 !text-base">
+          <el-icon class="!text-xl"><Location /></el-icon>
+          <span class="ml-3">旅游</span>
+        </el-menu-item>
+
+        <el-menu-item index="/concert" class="!rounded-xl !mb-3 !h-14 !text-base">
+          <el-icon class="!text-xl"><Headset /></el-icon>
+          <span class="ml-3">演唱会</span>
         </el-menu-item>
 
         <el-menu-item index="/match" class="!rounded-xl !mb-3 !h-14 !text-base">
@@ -53,6 +68,8 @@ import {
   Camera,
   VideoPlay,
   Headset,
+  Document,
+  Location,
   Trophy,
   Clock,
 } from '@element-plus/icons-vue'
@@ -73,23 +90,29 @@ const activeMenu = computed(() => route.path)
 :deep(.el-menu-item) {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 8px;
 }
 
 :deep(.el-menu-item:hover) {
-  background: rgba(0, 212, 255, 0.1) !important;
-  transform: translateX(8px);
-  color: rgba(0, 212, 255, 0.9) !important;
+  background: rgba(0, 212, 255, 0.12) !important;
+  color: rgba(0, 212, 255, 0.95) !important;
+  transform: translateX(6px);
+  border-left-color: rgba(0, 212, 255, 0.3);
 }
 
 :deep(.el-menu-item.is-active) {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 255, 204, 0.05) 100%) !important;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.25) 0%, rgba(0, 255, 204, 0.15) 100%) !important;
   color: #00d4ff !important;
   font-weight: 600;
   box-shadow: 
     0 4px 20px rgba(0, 212, 255, 0.3),
     inset 0 0 20px rgba(0, 212, 255, 0.1),
-    0 0 10px rgba(0, 212, 255, 0.2);
+    0 0 15px rgba(0, 212, 255, 0.2);
   border-left: 3px solid #00d4ff;
+  border-bottom-color: rgba(0, 212, 255, 0.2);
 }
 
 :deep(.el-menu-item.is-active::before) {

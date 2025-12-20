@@ -69,6 +69,30 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'book',
+        name: 'Book',
+        component: () => import('@/views/Book/index.vue'),
+        meta: {
+          title: '阅读',
+        },
+      },
+      {
+        path: 'travel',
+        name: 'Travel',
+        component: () => import('@/views/Travel/index.vue'),
+        meta: {
+          title: '旅游',
+        },
+      },
+      {
+        path: 'concert',
+        name: 'Concert',
+        component: () => import('@/views/Concert/index.vue'),
+        meta: {
+          title: '演唱会',
+        },
+      },
+      {
         path: 'match',
         name: 'Match',
         component: () => import('@/views/Match/index.vue'),

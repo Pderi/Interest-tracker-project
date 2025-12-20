@@ -76,9 +76,9 @@
               class="card-3d group cursor-pointer"
               @click="goDetail(album.albumId)"
             >
-              <div class="card-3d-inner rounded-2xl overflow-hidden glass-effect border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect">
+              <div class="card-3d-inner rounded-2xl overflow-hidden border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect bg-transparent">
                 <!-- 封面 -->
-                <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
+                <div class="relative aspect-square overflow-hidden">
                   <img
                     v-if="album.coverUrl && !imageErrorMap[album.albumId]"
                     :src="album.coverUrl"
@@ -87,7 +87,7 @@
                     loading="lazy"
                     @error="handleImageError(album.albumId)"
                   />
-                  <div v-else class="w-full h-full flex items-center justify-center">
+                  <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
                     <el-icon :size="48" class="text-[#c3cfe2]/40">
                       <Headset />
                     </el-icon>
@@ -116,7 +116,7 @@
                 </div>
 
                 <!-- 信息 -->
-                <div class="p-4 flex flex-col gap-2">
+                <div class="p-4 flex flex-col gap-2 glass-effect">
                   <h3 class="text-lg font-semibold text-white line-clamp-1">{{ album.title }}</h3>
                   <p class="text-sm text-[#00d4ff]/80 line-clamp-1">{{ album.artist }}</p>
                   <p class="text-xs text-gray-400">
@@ -612,6 +612,10 @@ onMounted(() => {
 <style scoped>
 .music-page {
   min-height: 100%;
+}
+
+.card-3d-inner {
+  background: transparent !important;
 }
 
 .line-clamp-1 {

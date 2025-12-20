@@ -30,6 +30,8 @@ import {
   Camera,
   VideoPlay,
   Headset,
+  Document,
+  Location,
   Trophy,
   Clock,
 } from '@element-plus/icons-vue'
@@ -41,6 +43,9 @@ const navItems = [
   { path: '/photo', label: '摄影', icon: Camera },
   { path: '/movie', label: '影视', icon: VideoPlay },
   { path: '/music', label: '音乐', icon: Headset },
+  { path: '/book', label: '阅读', icon: Document },
+  { path: '/travel', label: '旅游', icon: Location },
+  { path: '/concert', label: '演唱会', icon: Headset },
   { path: '/match', label: '球赛', icon: Trophy },
   { path: '/timeline', label: '时间线', icon: Clock },
 ]

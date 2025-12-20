@@ -9,7 +9,7 @@
     </div>
     
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
       <div 
         v-for="(stat, index) in stats" 
         :key="index"
@@ -78,6 +78,7 @@ import {
   Headset,
   Trophy,
   Document,
+  Location,
   ArrowRight,
 } from '@element-plus/icons-vue'
 import { getMoviePage } from '@/api/movie'
@@ -105,6 +106,27 @@ const stats = ref([
     iconBg: 'from-blue-500 to-blue-600',
   },
   {
+    label: '阅读记录',
+    value: '24',
+    desc: '本书',
+    icon: markRaw(Document),
+    iconBg: 'from-orange-500 to-orange-600',
+  },
+  {
+    label: '旅游记录',
+    value: '12',
+    desc: '个地点',
+    icon: markRaw(Location),
+    iconBg: 'from-cyan-500 to-cyan-600',
+  },
+  {
+    label: '演唱会记录',
+    value: '8',
+    desc: '场演出',
+    icon: markRaw(Headset),
+    iconBg: 'from-indigo-500 to-indigo-600',
+  },
+  {
     label: '球赛记录',
     value: '18',
     desc: '场比赛',
@@ -117,11 +139,11 @@ async function loadMovieStats() {
   try {
     // 总记录数
     const all = await getMoviePage({ pageNo: 1, pageSize: 1 })
-    const total = all.data.total || 0
+    const total = (all.data as any)?.page?.total || 0
 
     // 已看数量
     const watched = await getMoviePage({ pageNo: 1, pageSize: 1, watchStatus: 3 })
-    const watchedTotal = watched.data.total || 0
+    const watchedTotal = (watched.data as any)?.page?.total || 0
 
     stats.value[1].value = `${total}`
     stats.value[1].desc = `已看 ${watchedTotal} 部`
@@ -156,30 +178,48 @@ const recentActivities = ref([
   },
   {
     id: 3,
+    type: 'book',
+    title: '读完了《百年孤独》',
+    desc: '评分：9.5',
+    time: '1天前',
+    icon: markRaw(Document),
+    color: 'text-orange-400',
+  },
+  {
+    id: 4,
+    type: 'travel',
+    title: '去了北京',
+    desc: '故宫和天坛',
+    time: '2天前',
+    icon: markRaw(Location),
+    color: 'text-cyan-400',
+  },
+  {
+    id: 5,
+    type: 'concert',
+    title: '看了周杰伦演唱会',
+    desc: '北京鸟巢',
+    time: '3天前',
+    icon: markRaw(Headset),
+    color: 'text-indigo-400',
+  },
+  {
+    id: 6,
     type: 'music',
     title: '添加了《Blinding Lights》',
     desc: 'The Weeknd',
-    time: '1天前',
+    time: '4天前',
     icon: markRaw(Headset),
     color: 'text-blue-400',
   },
   {
-    id: 4,
+    id: 7,
     type: 'match',
     title: '观看了比赛',
     desc: '巴萨 vs 皇马',
-    time: '2天前',
+    time: '5天前',
     icon: markRaw(Trophy),
     color: 'text-green-400',
-  },
-  {
-    id: 5,
-    type: 'photo',
-    title: '上传了新照片',
-    desc: '城市夜景',
-    time: '3天前',
-    icon: markRaw(Camera),
-    color: 'text-purple-400',
   },
 ])
 </script>
