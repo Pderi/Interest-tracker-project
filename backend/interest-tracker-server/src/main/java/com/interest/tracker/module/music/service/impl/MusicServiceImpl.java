@@ -49,17 +49,9 @@ public class MusicServiceImpl implements MusicService {
             throw exception(UNAUTHORIZED);
         }
 
-        // 1. 创建或获取 Album
-        AlbumDO albumDO;
-        AlbumDO existAlbum = albumMapper.selectByTitleAndArtist(reqVO.getTitle(), reqVO.getArtist());
-        if (existAlbum != null) {
-            // 如果专辑已存在，复用
-            albumDO = existAlbum;
-        } else {
-            // 手动创建专辑
-            albumDO = BeanUtils.toBean(reqVO, AlbumDO.class);
-            albumMapper.insert(albumDO);
-        }
+        // 1. 创建专辑
+        AlbumDO albumDO = BeanUtils.toBean(reqVO, AlbumDO.class);
+        albumMapper.insert(albumDO);
 
         // 2. 检查是否已存在听歌记录
         AlbumRecordDO existRecord = albumRecordMapper.selectByUserIdAndAlbumId(userId, albumDO.getId());
@@ -171,7 +163,7 @@ public class MusicServiceImpl implements MusicService {
     }
 
     @Override
-    public PageResult<AlbumPageRespVO> getAlbumPage(AlbumPageReqVO reqVO) {
+    public AlbumPageWithStatsRespVO getAlbumPage(AlbumPageReqVO reqVO) {
         Long userId = UserContext.getUserId();
         if (userId == null) {
             throw exception(UNAUTHORIZED);
@@ -201,6 +193,7 @@ public class MusicServiceImpl implements MusicService {
                     // 设置记录ID和专辑ID（字段名不同）
                     vo.setRecordId(record.getId());
                     vo.setAlbumId(record.getAlbumId());
+                    // comment字段会自动从record中映射
 
                     // 填充专辑信息
                     AlbumDO album = albumMap.get(record.getAlbumId());
@@ -210,12 +203,21 @@ public class MusicServiceImpl implements MusicService {
                         vo.setReleaseYear(album.getReleaseYear());
                         vo.setCoverUrl(album.getCoverUrl());
                     }
+                    // 填充评价
+                    vo.setComment(record.getComment());
 
                     return vo;
                 })
                 .collect(Collectors.toList());
 
-        return new PageResult<>(voList, pageResult.getTotal());
+        // 5. 统计各状态数量
+        java.util.Map<Integer, Long> statusCounts = albumRecordMapper.countByStatus(userId);
+
+        // 6. 组装响应
+        AlbumPageWithStatsRespVO respVO = new AlbumPageWithStatsRespVO();
+        respVO.setPage(new PageResult<>(voList, pageResult.getTotal()));
+        respVO.setStatusCounts(statusCounts);
+        return respVO;
     }
 
     @Override

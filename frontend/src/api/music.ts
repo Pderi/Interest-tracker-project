@@ -7,6 +7,7 @@ import type {
   AlbumCreateReq,
   AlbumCreateRes,
   AlbumRecordUpdateReq,
+  AlbumPageWithStats,
 } from '@/types/api'
 
 // 分页获取当前用户的专辑 + 听歌记录列表
@@ -22,7 +23,7 @@ export function getAlbumPage(params: {
   endListenDate?: string
   sort?: string
 }) {
-  return request.get<CommonResult<PageResult<AlbumPageItem>>>('/api/music/albums', {
+  return request.get<CommonResult<AlbumPageWithStats>>('/api/music/albums', {
     params,
   })
 }

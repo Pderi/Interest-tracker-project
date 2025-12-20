@@ -43,6 +43,9 @@ public class MoviePageRespVO {
     @Schema(description = "标签（逗号分隔）", example = "动作,悬疑")
     private String tags;
 
+    @Schema(description = "评价", example = "很好看")
+    private String comment;
+
     @Schema(description = "创建时间", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;
 

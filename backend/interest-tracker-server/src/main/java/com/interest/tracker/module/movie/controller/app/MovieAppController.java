@@ -67,9 +67,9 @@ public class MovieAppController {
      */
     @GetMapping
     @Operation(summary = "获取影视分页列表")
-    public CommonResult<PageResult<MoviePageRespVO>> getMoviePage(@Valid MoviePageReqVO reqVO) {
-        PageResult<MoviePageRespVO> pageResult = movieService.getMoviePage(reqVO);
-        return success(pageResult);
+    public CommonResult<MoviePageWithStatsRespVO> getMoviePage(@Valid MoviePageReqVO reqVO) {
+        MoviePageWithStatsRespVO result = movieService.getMoviePage(reqVO);
+        return success(result);
     }
 
     /**

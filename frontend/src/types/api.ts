@@ -24,6 +24,22 @@ export interface PageResult<T> {
 }
 
 /**
+ * 影视分页列表响应（包含统计信息）
+ */
+export interface MoviePageWithStats {
+  page: PageResult<MoviePageItem>
+  statusCounts: Record<number, number> // key为状态值，value为数量
+}
+
+/**
+ * 专辑分页列表响应（包含统计信息）
+ */
+export interface AlbumPageWithStats {
+  page: PageResult<AlbumPageItem>
+  statusCounts: Record<number, number> // key为状态值，value为数量
+}
+
+/**
  * 影视分页列表项
  */
 export interface MoviePageItem {
@@ -36,6 +52,7 @@ export interface MoviePageItem {
   personalRating?: number
   watchDate?: string
   tags?: string
+  comment?: string
   createTime: string
 }
 
@@ -144,6 +161,7 @@ export interface AlbumPageItem {
   listenDate?: string
   listenCount?: number
   tags?: string
+  comment?: string
   createTime: string
 }
 

@@ -201,7 +201,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public PageResult<MoviePageRespVO> getMoviePage(MoviePageReqVO reqVO) {
+    public MoviePageWithStatsRespVO getMoviePage(MoviePageReqVO reqVO) {
         Long userId = UserContext.getUserId();
         if (userId == null) {
             throw exception(UNAUTHORIZED);
@@ -239,12 +239,21 @@ public class MovieServiceImpl implements MovieService {
                         vo.setType(movie.getType());
                         vo.setPosterUrl(movie.getPosterUrl());
                     }
+                    // 填充评价
+                    vo.setComment(record.getComment());
 
                     return vo;
                 })
                 .collect(Collectors.toList());
 
-        return new PageResult<>(voList, pageResult.getTotal());
+        // 5. 统计各状态数量
+        java.util.Map<Integer, Long> statusCounts = movieRecordMapper.countByStatus(userId);
+
+        // 6. 组装响应
+        MoviePageWithStatsRespVO respVO = new MoviePageWithStatsRespVO();
+        respVO.setPage(new PageResult<>(voList, pageResult.getTotal()));
+        respVO.setStatusCounts(statusCounts);
+        return respVO;
     }
 
     @Override

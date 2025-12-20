@@ -3,6 +3,7 @@ package com.interest.tracker.module.music.dal.mysql;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.yulichang.base.MPJBaseMapper;
 import com.interest.tracker.framework.common.pojo.PageResult;
+import com.interest.tracker.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.interest.tracker.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.interest.tracker.module.music.controller.app.vo.AlbumPageReqVO;
 import com.interest.tracker.module.music.dal.dataobject.AlbumDO;
@@ -31,10 +32,16 @@ public interface AlbumRecordMapper extends MPJBaseMapper<AlbumRecordDO> {
                 .betweenIfPresent(AlbumRecordDO::getListenDate, reqVO.getStartListenDate(), reqVO.getEndListenDate())
                 .eqIfPresent(AlbumDO::getArtist, reqVO.getArtist())
                 .eqIfPresent(AlbumDO::getGenre, reqVO.getGenre())
-                .likeIfPresent(AlbumDO::getTitle, reqVO.getKeyword())
-                .likeIfPresent(AlbumDO::getArtist, reqVO.getKeyword())
-                .likeIfPresent(AlbumRecordDO::getTags, reqVO.getTag())
-                .selectAll(AlbumRecordDO.class);
+                .likeIfPresent(AlbumRecordDO::getTags, reqVO.getTag());
+        
+        // 关键词搜索：专辑名或艺术家匹配（OR 关系）
+        if (reqVO.getKeyword() != null && !reqVO.getKeyword().trim().isEmpty()) {
+            wrapper.and(w -> w.like(AlbumDO::getTitle, reqVO.getKeyword())
+                    .or()
+                    .like(AlbumDO::getArtist, reqVO.getKeyword()));
+        }
+        
+        wrapper.selectAll(AlbumRecordDO.class);
 
         // 排序
         if ("listenDate".equals(reqVO.getSort())) {
@@ -65,6 +72,24 @@ public interface AlbumRecordMapper extends MPJBaseMapper<AlbumRecordDO> {
                 .eqIfPresent(AlbumRecordDO::getAlbumId, albumId)
                 .selectAll(AlbumRecordDO.class);
         return selectJoinOne(AlbumRecordDO.class, wrapper);
+    }
+
+    /**
+     * 统计各状态的数量（不包含搜索和筛选条件，只按用户ID）
+     *
+     * @param userId 用户ID
+     * @return Map<状态值, 数量>
+     */
+    default java.util.Map<Integer, Long> countByStatus(Long userId) {
+        java.util.Map<Integer, Long> result = new java.util.HashMap<>();
+        for (int status = 1; status <= 4; status++) {
+            LambdaQueryWrapperX<AlbumRecordDO> wrapper = new LambdaQueryWrapperX<>();
+            wrapper.eq(AlbumRecordDO::getUserId, userId)
+                    .eq(AlbumRecordDO::getListenStatus, status);
+            long count = selectCount(wrapper);
+            result.put(status, count);
+        }
+        return result;
     }
 
 }

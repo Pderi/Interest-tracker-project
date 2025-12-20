@@ -34,12 +34,12 @@ public interface MusicService {
     AlbumRespVO getAlbum(Long id);
 
     /**
-     * 获取专辑分页列表
+     * 获取专辑分页列表（包含统计信息）
      *
      * @param reqVO 分页请求
-     * @return 分页结果
+     * @return 分页结果和统计信息
      */
-    PageResult<AlbumPageRespVO> getAlbumPage(AlbumPageReqVO reqVO);
+    AlbumPageWithStatsRespVO getAlbumPage(AlbumPageReqVO reqVO);
 
     /**
      * 删除听歌记录

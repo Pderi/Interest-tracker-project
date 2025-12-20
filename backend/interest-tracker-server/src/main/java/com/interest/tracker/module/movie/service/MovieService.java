@@ -34,12 +34,12 @@ public interface MovieService {
     MovieRespVO getMovie(Long id);
 
     /**
-     * 获取影视分页列表
+     * 获取影视分页列表（包含统计信息）
      *
      * @param reqVO 分页请求
-     * @return 分页结果
+     * @return 分页结果和统计信息
      */
-    PageResult<MoviePageRespVO> getMoviePage(MoviePageReqVO reqVO);
+    MoviePageWithStatsRespVO getMoviePage(MoviePageReqVO reqVO);
 
     /**
      * 删除观看记录

@@ -13,32 +13,41 @@
     </div>
 
     <!-- 筛选栏 -->
-    <div class="mb-6 flex flex-wrap gap-3 items-center">
-      <div class="flex flex-wrap gap-2">
-        <el-button
-          v-for="status in statusOptions"
-          :key="status.value"
-          :type="filterStatus === status.value ? 'primary' : 'default'"
-          size="small"
-          @click="changeStatus(status.value)"
-          :class="filterStatus === status.value ? '!bg-[#00d4ff] !border-[#00d4ff]' : ''"
+    <div class="mb-6">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-wrap gap-2 w-full">
+          <el-button
+            v-for="status in statusOptions"
+            :key="status.value"
+            :type="filterStatus === status.value ? 'primary' : 'default'"
+            @click="changeStatus(status.value)"
+            :class="filterStatus === status.value ? '!bg-[#00d4ff] !border-[#00d4ff]' : ''"
+          >
+            <span>{{ status.label }}</span>
+            <span
+              v-if="status.value !== 'all' && statusCounts[status.value]"
+              class="ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium"
+              :class="filterStatus === status.value 
+                ? 'bg-white/20 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+            >
+              {{ statusCounts[status.value] }}
+            </span>
+          </el-button>
+        </div>
+        <el-input
+          v-model="keyword"
+          placeholder="搜索专辑名、艺术家…"
+          clearable
+          class="w-full"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
         >
-          {{ status.label }}
-        </el-button>
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
       </div>
-      <el-input
-        v-model="keyword"
-        placeholder="搜索专辑名、艺术家…"
-        clearable
-        size="small"
-        class="w-full sm:w-64 mt-3 sm:mt-0"
-        @keyup.enter="loadAlbums"
-        @clear="loadAlbums"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
     </div>
 
     <!-- 专辑卡片网格 -->
@@ -57,107 +66,132 @@
         v-else
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
       >
-        <div
+        <template
           v-for="album in albumList"
           :key="album.recordId"
-          class="card-3d group cursor-pointer"
-          @click="goDetail(album.albumId)"
         >
-          <div class="card-3d-inner rounded-2xl overflow-hidden glass-effect border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect">
-            <!-- 封面 -->
-            <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
-              <img
-                v-if="album.coverUrl && !imageErrorMap[album.albumId]"
-                :src="album.coverUrl"
-                :alt="album.title"
-                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                loading="lazy"
-                @error="handleImageError(album.albumId)"
-              />
-              <div v-else class="w-full h-full flex items-center justify-center">
-                <el-icon :size="48" class="text-[#c3cfe2]/40">
-                  <Headset />
-                </el-icon>
-              </div>
+          <div class="flex flex-col gap-2">
+            <!-- 音乐卡片 -->
+            <div
+              class="card-3d group cursor-pointer"
+              @click="goDetail(album.albumId)"
+            >
+              <div class="card-3d-inner rounded-2xl overflow-hidden glass-effect border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect">
+                <!-- 封面 -->
+                <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
+                  <img
+                    v-if="album.coverUrl && !imageErrorMap[album.albumId]"
+                    :src="album.coverUrl"
+                    :alt="album.title"
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                    @error="handleImageError(album.albumId)"
+                  />
+                  <div v-else class="w-full h-full flex items-center justify-center">
+                    <el-icon :size="48" class="text-[#c3cfe2]/40">
+                      <Headset />
+                    </el-icon>
+                  </div>
 
-              <!-- 状态标签 -->
-              <div class="absolute top-3 right-3">
-                <el-tag
-                  :type="getStatusType(album.listenStatus)"
-                  size="small"
-                  effect="dark"
-                  class="backdrop-blur-md"
-                >
-                  {{ getStatusLabel(album.listenStatus) }}
-                </el-tag>
-              </div>
+                  <!-- 状态标签 -->
+                  <div class="absolute top-3 right-3">
+                    <el-tag
+                      :type="getStatusType(album.listenStatus)"
+                      size="small"
+                      effect="dark"
+                      class="backdrop-blur-md"
+                    >
+                      {{ getStatusLabel(album.listenStatus) }}
+                    </el-tag>
+                  </div>
 
-              <!-- 评分 -->
-              <div
-                v-if="album.personalRating != null"
-                class="absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
-              >
-                <el-icon class="text-yellow-400"><StarFilled /></el-icon>
-                <span class="text-white text-sm font-semibold">{{ album.personalRating }}</span>
-              </div>
-            </div>
+                  <!-- 评分 -->
+                  <div
+                    v-if="album.personalRating != null"
+                    class="absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
+                  >
+                    <el-icon class="text-yellow-400"><StarFilled /></el-icon>
+                    <span class="text-white text-sm font-semibold">{{ album.personalRating }}</span>
+                  </div>
+                </div>
 
-            <!-- 信息 -->
-            <div class="p-4 flex flex-col gap-2">
-              <h3 class="text-lg font-semibold text-white line-clamp-1">{{ album.title }}</h3>
-              <p class="text-sm text-[#00d4ff]/80 line-clamp-1">{{ album.artist }}</p>
-              <p class="text-xs text-gray-400">
-                <span v-if="album.releaseYear">{{ album.releaseYear }}</span>
-                <span v-if="album.listenDate"> · 已听于 {{ album.listenDate }}</span>
-                <span v-if="album.listenCount"> · {{ album.listenCount }}次</span>
-              </p>
+                <!-- 信息 -->
+                <div class="p-4 flex flex-col gap-2">
+                  <h3 class="text-lg font-semibold text-white line-clamp-1">{{ album.title }}</h3>
+                  <p class="text-sm text-[#00d4ff]/80 line-clamp-1">{{ album.artist }}</p>
+                  <p class="text-xs text-gray-400">
+                    <span v-if="album.releaseYear">{{ album.releaseYear }}</span>
+                    <span v-if="album.listenDate"> · 已听于 {{ album.listenDate }}</span>
+                    <span v-if="album.listenCount"> · {{ album.listenCount }}次</span>
+                  </p>
 
-              <!-- 标签 -->
-              <div
-                v-if="album.tags"
-                class="flex flex-wrap gap-2 mt-1"
-              >
-                <el-tag
-                  v-for="tag in album.tags.split(',')"
-                  :key="tag"
-                  size="small"
-                  effect="plain"
-                  class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
-                >
-                  {{ tag }}
-                </el-tag>
-              </div>
+                  <!-- 标签 -->
+                  <div
+                    v-if="album.tags"
+                    class="flex flex-wrap gap-2 mt-1"
+                  >
+                    <el-tag
+                      v-for="tag in album.tags.split(',')"
+                      :key="tag"
+                      size="small"
+                      effect="plain"
+                      class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
+                    >
+                      {{ tag }}
+                    </el-tag>
+                  </div>
 
-              <div class="mt-2 flex justify-between items-center">
-                <el-button
-                  text
-                  size="small"
-                  class="!text-[#00d4ff] hover:!text-[#00ffcc]"
-                  @click.stop="openEditDialog(album)"
-                >
-                  编辑
-                </el-button>
-                <el-popconfirm
-                  title="确定删除该记录？"
-                  confirm-button-text="删除"
-                  cancel-button-text="取消"
-                  confirm-button-type="danger"
-                  @confirm="handleDelete(album.recordId)"
-                >
-                  <template #reference>
+                  <div class="mt-2 flex justify-between items-center">
                     <el-button
                       text
                       size="small"
-                      class="!text-red-400 hover:!text-red-300"
+                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
+                      @click.stop="openEditDialog(album)"
                     >
-                      删除
+                      编辑
                     </el-button>
-                  </template>
-                </el-popconfirm>
+                    <el-popconfirm
+                      title="确定删除该记录？"
+                      confirm-button-text="删除"
+                      cancel-button-text="取消"
+                      confirm-button-type="danger"
+                      @confirm="handleDelete(album.recordId)"
+                    >
+                      <template #reference>
+                        <el-button
+                          text
+                          size="small"
+                          class="!text-red-400 hover:!text-red-300"
+                        >
+                          删除
+                        </el-button>
+                      </template>
+                    </el-popconfirm>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 评价卡片 -->
+            <div
+              v-if="album.comment"
+              class="card-3d"
+            >
+              <div class="card-3d-inner rounded-2xl glass-effect border border-white/10 p-4 hover:border-[#00d4ff]/20 transition-all">
+                <div class="flex items-start gap-3">
+                  <el-icon class="text-[#00d4ff]/60 mt-0.5 flex-shrink-0">
+                    <ChatLineRound />
+                  </el-icon>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-gray-300 leading-relaxed">
+                      <span class="text-[#00d4ff]/60">"</span>{{ album.comment }}<span class="text-[#00d4ff]/60">"</span>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
 
       <!-- 分页 -->
@@ -263,16 +297,6 @@
             />
           </el-form-item>
 
-          <el-form-item label="总时长">
-            <el-input-number
-              v-model="form.duration"
-              :min="1"
-              placeholder="总时长（秒）"
-              class="w-full"
-              :disabled="dialogMode === 'edit'"
-            />
-          </el-form-item>
-
           <el-form-item label="简介">
             <el-input
               v-model="form.description"
@@ -360,7 +384,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Headset, StarFilled, Search } from '@element-plus/icons-vue'
+import { Plus, Headset, StarFilled, Search, ChatLineRound } from '@element-plus/icons-vue'
 import { getAlbumPage, createAlbum, updateAlbumRecord, deleteAlbumRecord } from '@/api/music'
 import type { AlbumPageItem } from '@/types/api'
 
@@ -373,6 +397,7 @@ const pageNo = ref(1)
 const pageSize = ref(8)
 const filterStatus = ref<number | 'all'>('all')
 const keyword = ref('')
+const statusCounts = ref<Record<number, number>>({})
 
 const statusOptions = [
   { label: '全部', value: 'all' as const },
@@ -396,8 +421,9 @@ async function loadAlbums() {
       params.status = filterStatus.value
     }
     const res = await getAlbumPage(params)
-    albumList.value = res.data.list || []
-    total.value = res.data.total || 0
+    albumList.value = res.data.page?.list || []
+    total.value = res.data.page?.total || 0
+    statusCounts.value = res.data.statusCounts || {}
   } catch (e) {
     // 错误在 request 拦截器中已统一提示
   } finally {
@@ -407,6 +433,11 @@ async function loadAlbums() {
 
 function changeStatus(value: number | 'all') {
   filterStatus.value = value
+  pageNo.value = 1
+  loadAlbums()
+}
+
+function handleSearch() {
   pageNo.value = 1
   loadAlbums()
 }

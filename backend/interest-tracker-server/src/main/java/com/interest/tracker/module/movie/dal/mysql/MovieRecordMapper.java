@@ -3,6 +3,7 @@ package com.interest.tracker.module.movie.dal.mysql;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.yulichang.base.MPJBaseMapper;
 import com.interest.tracker.framework.common.pojo.PageResult;
+import com.interest.tracker.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.interest.tracker.framework.mybatis.core.query.MPJLambdaWrapperX;
 import com.interest.tracker.module.movie.controller.app.vo.MoviePageReqVO;
 import com.interest.tracker.module.movie.dal.dataobject.MovieDO;
@@ -63,6 +64,24 @@ public interface MovieRecordMapper extends MPJBaseMapper<MovieRecordDO> {
                 .eqIfPresent(MovieRecordDO::getMovieId, movieId)
                 .selectAll(MovieRecordDO.class);
         return selectJoinOne(MovieRecordDO.class, wrapper);
+    }
+
+    /**
+     * 统计各状态的数量（不包含搜索和筛选条件，只按用户ID）
+     *
+     * @param userId 用户ID
+     * @return Map<状态值, 数量>
+     */
+    default java.util.Map<Integer, Long> countByStatus(Long userId) {
+        java.util.Map<Integer, Long> result = new java.util.HashMap<>();
+        for (int status = 1; status <= 4; status++) {
+            LambdaQueryWrapperX<MovieRecordDO> wrapper = new LambdaQueryWrapperX<>();
+            wrapper.eq(MovieRecordDO::getUserId, userId)
+                    .eq(MovieRecordDO::getWatchStatus, status);
+            long count = selectCount(wrapper);
+            result.put(status, count);
+        }
+        return result;
     }
 
 }

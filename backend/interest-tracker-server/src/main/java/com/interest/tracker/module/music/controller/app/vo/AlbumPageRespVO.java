@@ -49,6 +49,9 @@ public class AlbumPageRespVO {
     @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
     private String tags;
 
+    @Schema(description = "评价", example = "很好听")
+    private String comment;
+
     @Schema(description = "创建时间", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;
 

@@ -7,6 +7,7 @@ import type {
   MovieCreateReq,
   MovieCreateRes,
   MovieRecordUpdateReq,
+  MoviePageWithStats,
 } from '@/types/api'
 
 // 分页获取当前用户的影视 + 观影记录列表
@@ -21,7 +22,7 @@ export function getMoviePage(params: {
   endWatchDate?: string
   sort?: string
 }) {
-  return request.get<CommonResult<PageResult<MoviePageItem>>>('/api/movies', {
+  return request.get<CommonResult<MoviePageWithStats>>('/api/movies', {
     params,
   })
 }

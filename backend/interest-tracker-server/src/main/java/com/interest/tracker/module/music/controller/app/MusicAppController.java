@@ -67,9 +67,9 @@ public class MusicAppController {
      */
     @GetMapping
     @Operation(summary = "获取专辑分页列表")
-    public CommonResult<PageResult<AlbumPageRespVO>> getAlbumPage(@Valid AlbumPageReqVO reqVO) {
-        PageResult<AlbumPageRespVO> pageResult = musicService.getAlbumPage(reqVO);
-        return success(pageResult);
+    public CommonResult<AlbumPageWithStatsRespVO> getAlbumPage(@Valid AlbumPageReqVO reqVO) {
+        AlbumPageWithStatsRespVO result = musicService.getAlbumPage(reqVO);
+        return success(result);
     }
 
     /**
