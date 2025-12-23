@@ -43,6 +43,20 @@ export function updateAlbumRecord(recordId: number, data: AlbumRecordUpdateReq) 
   return request.put<CommonResult<boolean>>(`/api/music/albums/records/${recordId}`, data)
 }
 
+// 更新专辑信息
+export function updateAlbum(albumId: number, data: {
+  title?: string
+  artist?: string
+  releaseYear?: number
+  genre?: string
+  description?: string
+  coverUrl?: string
+  totalTracks?: number
+  duration?: number
+}) {
+  return request.put<CommonResult<boolean>>(`/api/music/albums/${albumId}`, { id: albumId, ...data })
+}
+
 // 删除听歌记录
 export function deleteAlbumRecord(recordId: number) {
   return request.delete<CommonResult<boolean>>(`/api/music/albums/records/${recordId}`)

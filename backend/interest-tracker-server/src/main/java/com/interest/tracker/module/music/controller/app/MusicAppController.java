@@ -52,6 +52,19 @@ public class MusicAppController {
     }
 
     /**
+     * 更新专辑信息
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "更新专辑信息")
+    @Parameter(name = "id", description = "专辑ID", required = true)
+    public CommonResult<Boolean> updateAlbum(@PathVariable("id") Long id,
+                                             @Valid @RequestBody AlbumUpdateReqVO reqVO) {
+        reqVO.setId(id);
+        musicService.updateAlbum(reqVO);
+        return success(true);
+    }
+
+    /**
      * 获取专辑详情
      */
     @GetMapping("/{id}")

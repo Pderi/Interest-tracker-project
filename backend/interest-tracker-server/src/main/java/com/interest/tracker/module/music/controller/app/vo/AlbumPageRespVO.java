@@ -34,6 +34,9 @@ public class AlbumPageRespVO {
     @Schema(description = "封面URL", example = "https://example.com/cover.jpg")
     private String coverUrl;
 
+    @Schema(description = "音乐类型（摇滚、流行等，逗号分隔）", example = "摇滚,流行")
+    private String genre;
+
     @Schema(description = "听歌状态：1-想听 2-在听 3-已听 4-弃听", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED, example = "3")
     private Integer listenStatus;
 
@@ -45,9 +48,6 @@ public class AlbumPageRespVO {
 
     @Schema(description = "听歌次数", example = "10")
     private Integer listenCount;
-
-    @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
-    private String tags;
 
     @Schema(description = "评价", example = "很好听")
     private String comment;

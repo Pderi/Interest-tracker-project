@@ -125,19 +125,19 @@
                     <span v-if="album.listenCount"> · {{ album.listenCount }}次</span>
                   </p>
 
-                  <!-- 标签 -->
+                  <!-- 音乐类型 -->
                   <div
-                    v-if="album.tags"
+                    v-if="album.genre"
                     class="flex flex-wrap gap-2 mt-1"
                   >
                     <el-tag
-                      v-for="tag in album.tags.split(',')"
-                      :key="tag"
+                      v-for="genre in album.genre.split(',')"
+                      :key="genre"
                       size="small"
                       effect="plain"
                       class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
                     >
-                      {{ tag }}
+                      {{ genre }}
                     </el-tag>
                   </div>
 
@@ -234,7 +234,6 @@
             <el-input
               v-model="form.title"
               placeholder="请输入专辑名称"
-              :disabled="dialogMode === 'edit'"
             />
           </el-form-item>
 
@@ -245,7 +244,6 @@
             <el-input
               v-model="form.artist"
               placeholder="请输入艺术家/乐队"
-              :disabled="dialogMode === 'edit'"
             />
           </el-form-item>
 
@@ -256,7 +254,6 @@
               :max="2100"
               placeholder="发行年份"
               class="w-full"
-              :disabled="dialogMode === 'edit'"
             />
           </el-form-item>
 
@@ -264,7 +261,6 @@
             <el-input
               v-model="form.genre"
               placeholder="多个类型使用逗号分隔，例如：摇滚,流行"
-              :disabled="dialogMode === 'edit'"
             />
           </el-form-item>
 
@@ -273,7 +269,6 @@
               <el-input
                 v-model="form.coverUrl"
                 placeholder="支持粘贴图片地址"
-                :disabled="dialogMode === 'edit'"
               />
               <div
                 v-if="form.coverUrl"
@@ -293,7 +288,6 @@
               :min="1"
               placeholder="总曲目数"
               class="w-full"
-              :disabled="dialogMode === 'edit'"
             />
           </el-form-item>
 
@@ -303,7 +297,6 @@
               type="textarea"
               :rows="2"
               placeholder="专辑简介"
-              :disabled="dialogMode === 'edit'"
             />
           </el-form-item>
 
@@ -346,13 +339,6 @@
             />
           </el-form-item>
 
-          <el-form-item label="标签">
-            <el-input
-              v-model="form.tags"
-              placeholder="多个标签使用逗号分隔，例如：摇滚,经典"
-            />
-          </el-form-item>
-
           <el-form-item label="评价">
             <el-input
               v-model="form.comment"
@@ -385,7 +371,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Headset, StarFilled, Search, ChatLineRound } from '@element-plus/icons-vue'
-import { getAlbumPage, createAlbum, updateAlbumRecord, deleteAlbumRecord } from '@/api/music'
+import { getAlbumPage, createAlbum, getAlbumDetail, updateAlbum, updateAlbumRecord, deleteAlbumRecord } from '@/api/music'
 import type { AlbumPageItem } from '@/types/api'
 
 const router = useRouter()
@@ -480,6 +466,7 @@ const formRef = ref<FormInstance>()
 
 const form = reactive<{
   recordId?: number
+  albumId?: number
   title: string
   artist: string
   releaseYear?: number
@@ -492,7 +479,6 @@ const form = reactive<{
   personalRating?: number
   listenDate?: string
   listenCount?: number
-  tags?: string
   comment?: string
 }>({
   title: '',
@@ -506,6 +492,7 @@ const rules: FormRules = {
 
 function resetForm() {
   form.recordId = undefined
+  form.albumId = undefined
   form.title = ''
   form.artist = ''
   form.releaseYear = undefined
@@ -518,7 +505,6 @@ function resetForm() {
   form.personalRating = undefined
   form.listenDate = ''
   form.listenCount = undefined
-  form.tags = ''
   form.comment = ''
 }
 
@@ -528,9 +514,12 @@ function openCreateDialog() {
   dialogVisible.value = true
 }
 
-function openEditDialog(item: AlbumPageItem) {
+async function openEditDialog(item: AlbumPageItem) {
   dialogMode.value = 'edit'
   form.recordId = item.recordId
+  form.albumId = item.albumId
+  
+  // 先设置列表返回的基本信息
   form.title = item.title
   form.artist = item.artist
   form.releaseYear = item.releaseYear
@@ -539,8 +528,26 @@ function openEditDialog(item: AlbumPageItem) {
   form.personalRating = item.personalRating
   form.listenDate = item.listenDate
   form.listenCount = item.listenCount
-  form.tags = item.tags
-  form.comment = '' // 列表不返回 comment，编辑时可在详情页扩展
+  form.comment = item.comment || ''
+  
+  // 获取详情以填充 genre、description、totalTracks 等字段
+  try {
+    const res = await getAlbumDetail(item.albumId)
+    if (res.data?.album) {
+      form.genre = res.data.album.genre || ''
+      form.description = res.data.album.description || ''
+      form.totalTracks = res.data.album.totalTracks
+      form.duration = res.data.album.duration
+    }
+    if (res.data?.record) {
+      form.comment = res.data.record.comment || ''
+    }
+  } catch (e) {
+    // 如果获取详情失败，至少保证基本字段已设置
+    form.genre = ''
+    form.description = ''
+  }
+  
   dialogVisible.value = true
 }
 
@@ -566,20 +573,33 @@ async function handleSubmit() {
         personalRating: form.personalRating,
         listenDate: form.listenDate,
         listenCount: form.listenCount,
-        tags: form.tags,
         comment: form.comment,
       })
       ElMessage.success('创建成功')
-    } else if (dialogMode.value === 'edit' && form.recordId) {
-      await updateAlbumRecord(form.recordId, {
-        id: form.recordId,
-        listenStatus: form.listenStatus,
-        personalRating: form.personalRating,
-        listenDate: form.listenDate,
-        listenCount: form.listenCount,
-        tags: form.tags,
-        comment: form.comment,
-      })
+    } else if (dialogMode.value === 'edit' && form.recordId && form.albumId) {
+      // 编辑时同时更新专辑信息和记录信息
+      await Promise.all([
+        // 更新专辑信息
+        updateAlbum(form.albumId, {
+          title: form.title,
+          artist: form.artist,
+          releaseYear: form.releaseYear,
+          genre: form.genre,
+          description: form.description,
+          coverUrl: form.coverUrl,
+          totalTracks: form.totalTracks,
+          duration: form.duration,
+        }),
+        // 更新听歌记录
+        updateAlbumRecord(form.recordId, {
+          id: form.recordId,
+          listenStatus: form.listenStatus,
+          personalRating: form.personalRating,
+          listenDate: form.listenDate,
+          listenCount: form.listenCount,
+          comment: form.comment,
+        }),
+      ])
       ElMessage.success('更新成功')
     }
     dialogVisible.value = false

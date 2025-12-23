@@ -120,9 +120,6 @@ public class MusicServiceImpl implements MusicService {
         if (updateDO.getComment() != null) {
             recordDO.setComment(updateDO.getComment());
         }
-        if (updateDO.getTags() != null) {
-            recordDO.setTags(updateDO.getTags());
-        }
     }
 
     /**
@@ -202,6 +199,7 @@ public class MusicServiceImpl implements MusicService {
                         vo.setArtist(album.getArtist());
                         vo.setReleaseYear(album.getReleaseYear());
                         vo.setCoverUrl(album.getCoverUrl());
+                        vo.setGenre(album.getGenre());
                     }
                     // 填充评价
                     vo.setComment(record.getComment());
@@ -238,6 +236,47 @@ public class MusicServiceImpl implements MusicService {
 
         // 3. 软删除
         albumRecordMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateAlbum(AlbumUpdateReqVO reqVO) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            throw exception(UNAUTHORIZED);
+        }
+
+        // 1. 校验专辑存在
+        AlbumDO albumDO = validateAlbumExists(reqVO.getId());
+
+        // 2. 应用更新字段（只更新非空字段）
+        if (reqVO.getTitle() != null) {
+            albumDO.setTitle(reqVO.getTitle());
+        }
+        if (reqVO.getArtist() != null) {
+            albumDO.setArtist(reqVO.getArtist());
+        }
+        if (reqVO.getReleaseYear() != null) {
+            albumDO.setReleaseYear(reqVO.getReleaseYear());
+        }
+        if (reqVO.getGenre() != null) {
+            albumDO.setGenre(reqVO.getGenre());
+        }
+        if (reqVO.getDescription() != null) {
+            albumDO.setDescription(reqVO.getDescription());
+        }
+        if (reqVO.getCoverUrl() != null) {
+            albumDO.setCoverUrl(reqVO.getCoverUrl());
+        }
+        if (reqVO.getTotalTracks() != null) {
+            albumDO.setTotalTracks(reqVO.getTotalTracks());
+        }
+        if (reqVO.getDuration() != null) {
+            albumDO.setDuration(reqVO.getDuration());
+        }
+
+        // 3. 更新专辑
+        albumMapper.updateById(albumDO);
     }
 
     /**

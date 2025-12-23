@@ -156,11 +156,11 @@ export interface AlbumPageItem {
   artist: string
   releaseYear?: number
   coverUrl?: string
+  genre?: string
   listenStatus: number // 1 想听 2 在听 3 已听 4 弃听
   personalRating?: number
   listenDate?: string
   listenCount?: number
-  tags?: string
   comment?: string
   createTime: string
 }
@@ -224,6 +224,5 @@ export interface AlbumRecordUpdateReq {
   listenDate?: string
   listenCount?: number
   comment?: string
-  tags?: string
 }
 

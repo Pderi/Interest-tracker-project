@@ -48,5 +48,12 @@ public interface MusicService {
      */
     void deleteAlbumRecord(Long id);
 
+    /**
+     * 更新专辑信息
+     *
+     * @param reqVO 更新请求
+     */
+    void updateAlbum(AlbumUpdateReqVO reqVO);
+
 }
 

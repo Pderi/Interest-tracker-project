@@ -150,6 +150,63 @@
               </div>
             </div>
 
+            <!-- 照片展示区域 -->
+            <div
+              v-if="concert.photos && concert.photos.length > 0"
+              class="card-3d"
+            >
+              <div class="card-3d-inner rounded-2xl glass-effect p-4 transition-all">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <el-icon class="text-[#00d4ff]/60">
+                      <Picture />
+                    </el-icon>
+                    <span class="text-sm text-gray-300">照片 ({{ concert.photos.length }})</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <el-button
+                      v-if="concert.photos.length > 6"
+                      text
+                      size="small"
+                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
+                      @click="openAllPhotosDialog(concert)"
+                    >
+                      查看全部
+                    </el-button>
+                    <el-button
+                      text
+                      size="small"
+                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
+                      @click="openPhotoUploadDialog(concert.id)"
+                    >
+                      添加照片
+                    </el-button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div
+                    v-for="photo in concert.photos.slice(0, 6)"
+                    :key="photo.id"
+                    class="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
+                    @click="previewPhoto(photo)"
+                  >
+                    <img
+                      :src="photo.thumbnailPath || photo.filePath"
+                      :alt="photo.title"
+                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <div
+                      v-if="concert.photos.length > 6 && photo === concert.photos[5]"
+                      class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-semibold cursor-pointer hover:bg-black/70 transition-colors"
+                      @click.stop="openAllPhotosDialog(concert)"
+                    >
+                      +{{ concert.photos.length - 6 }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 评价卡片 -->
             <div
               v-if="concert.comment"
@@ -188,13 +245,160 @@
         />
       </div>
     </div>
+
+    <!-- 照片上传对话框 -->
+    <el-dialog
+      v-model="photoUploadDialogVisible"
+      title="上传照片"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div class="space-y-4">
+        <el-upload
+          v-model:file-list="uploadFileList"
+          :auto-upload="false"
+          :multiple="true"
+          :limit="10"
+          :on-exceed="() => ElMessage.warning('最多只能上传10张照片')"
+          drag
+          accept="image/*"
+          class="w-full"
+        >
+          <el-icon class="el-icon--upload"><Upload /></el-icon>
+          <div class="el-upload__text">
+            将文件拖到此处，或<em>点击上传</em>
+          </div>
+          <template #tip>
+            <div class="el-upload__tip">
+              支持 JPG、PNG 格式，单张不超过 10MB
+            </div>
+          </template>
+        </el-upload>
+
+        <div
+          v-if="uploadFileList.length > 0"
+          class="grid grid-cols-4 gap-2 mt-4"
+        >
+          <div
+            v-for="(uploadFile, index) in uploadFileList"
+            :key="index"
+            class="relative aspect-square rounded-lg overflow-hidden group"
+          >
+            <img
+              :src="uploadFile.url || URL.createObjectURL(uploadFile.raw || uploadFile)"
+              :alt="uploadFile.name"
+              class="w-full h-full object-cover"
+            />
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <el-button
+                type="danger"
+                size="small"
+                :icon="Delete"
+                circle
+                @click="removeFile(index)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="photoUploadDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :loading="uploading"
+          @click="handlePhotoUpload"
+        >
+          上传
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 全部照片对话框 -->
+    <el-dialog
+      v-model="allPhotosDialogVisible"
+      :title="`${allPhotosConcert?.artist || ''} - 全部照片 (${allPhotosList.length})`"
+      width="90%"
+      :close-on-click-modal="true"
+      class="all-photos-dialog"
+    >
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto">
+        <div
+          v-for="photo in allPhotosList"
+          :key="photo.id"
+          class="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
+          @click="previewPhotoFromAll(photo)"
+        >
+          <img
+            :src="photo.thumbnailPath || photo.filePath"
+            :alt="photo.title"
+            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="absolute bottom-2 left-2 right-2">
+              <p class="text-white text-xs truncate">{{ photo.title }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <el-button @click="allPhotosDialogVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 照片预览对话框 -->
+    <el-dialog
+      v-model="photoPreviewVisible"
+      title="照片预览"
+      width="90%"
+      :close-on-click-modal="true"
+      class="photo-preview-dialog"
+    >
+      <div class="relative w-full" style="min-height: 60vh;">
+        <el-image
+          :src="previewPhotoList[previewIndex]"
+          fit="contain"
+          class="w-full"
+          style="max-height: 70vh;"
+          :preview-src-list="previewPhotoList"
+          :initial-index="previewIndex"
+          :preview-teleported="true"
+        />
+      </div>
+      <template #footer>
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-400">
+            {{ previewIndex + 1 }} / {{ previewPhotoList.length }}
+          </div>
+          <div class="flex gap-2">
+            <el-button
+              :disabled="previewIndex === 0"
+              @click="previewIndex = Math.max(0, previewIndex - 1)"
+            >
+              上一张
+            </el-button>
+            <el-button
+              :disabled="previewIndex === previewPhotoList.length - 1"
+              @click="previewIndex = Math.min(previewPhotoList.length - 1, previewIndex + 1)"
+            >
+              下一张
+            </el-button>
+            <el-button @click="photoPreviewVisible = false">关闭</el-button>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Headset, StarFilled, Search, ChatLineRound } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete } from '@element-plus/icons-vue'
+import { uploadPhoto, getPhotoList, deletePhoto, linkPhotoToConcert } from '@/api/photo'
+import type { Photo } from '@/api/photo'
 
 const loading = ref(false)
 const concertList = ref<any[]>([])
@@ -227,6 +431,12 @@ const mockConcerts = [
     tags: '流行,华语',
     comment: '现场氛围太棒了，经典歌曲一首接一首，全场大合唱！',
     imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
+    photos: [
+      { id: 1001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 1002, title: '舞台全景', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 1003, title: '观众席', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 1004, title: '灯光秀', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 2,
@@ -238,6 +448,11 @@ const mockConcerts = [
     tags: '摇滚,华语',
     comment: '五月天的现场感染力太强了，三个小时完全不够！',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
+    photos: [
+      { id: 2001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 2002, title: '舞台', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 2003, title: '全场大合唱', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 3,
@@ -249,6 +464,20 @@ const mockConcerts = [
     tags: '流行,欧美',
     comment: 'Taylor的舞台设计太震撼了，每一首歌都是视觉盛宴！',
     imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
+    photos: [
+      { id: 3001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 3002, title: '舞台设计', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 3003, title: '烟花表演', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 3004, title: '观众互动', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 3005, title: '服装造型', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 3006, title: '开场表演', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 3007, title: '灯光秀', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 3008, title: 'Encore环节', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 3009, title: '全场大合唱', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 3010, title: '后台花絮', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 3011, title: '签名环节', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 3012, title: '结束合影', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 4,
@@ -260,6 +489,10 @@ const mockConcerts = [
     tags: '民谣,华语',
     comment: '李健的声音太治愈了，现场听《贝加尔湖畔》简直是一种享受。',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
+    photos: [
+      { id: 4001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 4002, title: '舞台', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 5,
@@ -271,6 +504,11 @@ const mockConcerts = [
     tags: '摇滚,欧美',
     comment: 'Coldplay的现场太震撼了，全场手环同步闪烁，美轮美奂！',
     imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
+    photos: [
+      { id: 5001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 5002, title: '手环闪烁', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 5003, title: '舞台效果', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 6,
@@ -282,6 +520,9 @@ const mockConcerts = [
     tags: '流行,华语',
     comment: 'Eason的演唱会总是那么精彩，每一首歌都唱到心里。',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
+    photos: [
+      { id: 6001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 7,
@@ -293,6 +534,10 @@ const mockConcerts = [
     tags: '流行,电子,欧美',
     comment: 'Billie的现场太有感染力了，年轻一代的偶像！',
     imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
+    photos: [
+      { id: 7001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+      { id: 7002, title: '舞台设计', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
   {
     id: 8,
@@ -304,6 +549,10 @@ const mockConcerts = [
     tags: '民谣,摇滚,华语',
     comment: '朴树的现场很真实，没有太多花哨，就是纯粹的音乐。',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
+    photos: [
+      { id: 8001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
+      { id: 8002, title: '舞台', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
+    ] as Photo[],
   },
 ]
 
@@ -376,6 +625,136 @@ function handleDelete(id: number) {
     loadConcerts()
     ElMessage.success('删除成功')
   }
+}
+
+// 照片相关功能
+const photoUploadDialogVisible = ref(false)
+const currentConcertId = ref<number | null>(null)
+const uploadFileList = ref<any[]>([])
+const uploading = ref(false)
+
+function openPhotoUploadDialog(concertId: number) {
+  currentConcertId.value = concertId
+  photoUploadDialogVisible.value = true
+  uploadFileList.value = []
+}
+
+function removeFile(index: number) {
+  uploadFileList.value.splice(index, 1)
+}
+
+async function handlePhotoUpload() {
+  if (!currentConcertId.value || uploadFileList.value.length === 0) {
+    ElMessage.warning('请选择要上传的照片')
+    return
+  }
+
+  try {
+    uploading.value = true
+    const concert = mockConcerts.find(c => c.id === currentConcertId.value)
+    if (!concert) return
+
+    // 模拟上传照片
+    const uploadPromises = uploadFileList.value.map((uploadFile) => {
+      return new Promise<void>((resolve) => {
+        const file = uploadFile.raw || uploadFile
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const photo: Photo = {
+            id: Date.now() + Math.random(),
+            title: file.name,
+            filePath: e.target?.result as string,
+            thumbnailPath: e.target?.result as string,
+          }
+          if (!concert.photos) {
+            concert.photos = []
+          }
+          concert.photos.push(photo)
+          resolve()
+        }
+        reader.readAsDataURL(file)
+      })
+    })
+
+    await Promise.all(uploadPromises)
+
+    // 实际项目中应该调用API
+    // const formData = new FormData()
+    // uploadFileList.value.forEach(uploadFile => {
+    //   const file = uploadFile.raw || uploadFile
+    //   formData.append('files', file)
+    // })
+    // formData.append('concertRecordId', currentConcertId.value.toString())
+    // await uploadPhoto(formData)
+
+    ElMessage.success('照片上传成功')
+    photoUploadDialogVisible.value = false
+    uploadFileList.value = []
+    loadConcerts()
+  } catch (error) {
+    ElMessage.error('照片上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
+// 照片预览功能
+const photoPreviewVisible = ref(false)
+const previewPhotoList = ref<string[]>([])
+const previewIndex = ref(0)
+
+// 全部照片对话框
+const allPhotosDialogVisible = ref(false)
+const allPhotosList = ref<Photo[]>([])
+const allPhotosConcert = ref<any>(null)
+
+function previewPhoto(photo: Photo) {
+  // 找到包含这张照片的演唱会记录
+  const concert = concertList.value.find(cr => cr.photos?.some((p: Photo) => p.id === photo.id))
+  if (!concert || !concert.photos) return
+
+  // 找到当前照片在列表中的索引
+  const currentIndex = concert.photos.findIndex(p => p.id === photo.id)
+  if (currentIndex === -1) return
+
+  // 构建预览图片列表
+  previewPhotoList.value = concert.photos.map(p => p.filePath)
+  previewIndex.value = currentIndex
+  photoPreviewVisible.value = true
+}
+
+function openAllPhotosDialog(concert: any) {
+  allPhotosConcert.value = concert
+  allPhotosList.value = concert.photos || []
+  allPhotosDialogVisible.value = true
+}
+
+function previewPhotoFromAll(photo: Photo) {
+  const currentIndex = allPhotosList.value.findIndex(p => p.id === photo.id)
+  if (currentIndex === -1) return
+  previewPhotoList.value = allPhotosList.value.map(p => p.filePath)
+  previewIndex.value = currentIndex
+  photoPreviewVisible.value = true
+}
+
+function handleDeletePhoto(concertId: number, photoId: number) {
+  ElMessageBox.confirm('确定删除这张照片吗？', '提示', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    const concert = mockConcerts.find(c => c.id === concertId)
+    if (concert && concert.photos) {
+      const index = concert.photos.findIndex(p => p.id === photoId)
+      if (index > -1) {
+        concert.photos.splice(index, 1)
+        loadConcerts()
+        ElMessage.success('删除成功')
+      }
+    }
+    // 实际项目中应该调用API
+    // await deletePhoto(photoId)
+  }).catch(() => {})
 }
 
 onMounted(() => {

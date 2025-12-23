@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS `photo` (
     `tags` VARCHAR(512) DEFAULT NULL COMMENT '标签（逗号分隔）',
     `category` VARCHAR(64) DEFAULT NULL COMMENT '分类',
     `shoot_time` DATETIME DEFAULT NULL COMMENT '拍摄时间',
+    `travel_record_id` BIGINT DEFAULT NULL COMMENT '关联的旅游记录ID',
+    `concert_record_id` BIGINT DEFAULT NULL COMMENT '关联的观演记录ID',
     `view_count` INT NOT NULL DEFAULT 0 COMMENT '查看次数',
     `like_count` INT NOT NULL DEFAULT 0 COMMENT '点赞次数',
     `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
@@ -54,7 +56,9 @@ CREATE TABLE IF NOT EXISTS `photo` (
     `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
     KEY `idx_user_id` (`user_id`),
     KEY `idx_shoot_time` (`shoot_time`),
-    KEY `idx_create_time` (`create_time`)
+    KEY `idx_create_time` (`create_time`),
+    KEY `idx_travel_record_id` (`travel_record_id`),
+    KEY `idx_concert_record_id` (`concert_record_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='照片表';
 
 -- 相册表
@@ -240,6 +244,161 @@ CREATE TABLE IF NOT EXISTS `match_record` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='比赛记录表';
 
 -- ========================================
+-- 图书相关表
+-- ========================================
+
+-- 书籍表
+CREATE TABLE IF NOT EXISTS `book` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '书籍ID',
+    `douban_id` VARCHAR(64) DEFAULT NULL COMMENT '豆瓣ID（用于关联豆瓣数据）',
+    `title` VARCHAR(255) NOT NULL COMMENT '书名',
+    `author` VARCHAR(255) DEFAULT NULL COMMENT '作者（逗号分隔）',
+    `publisher` VARCHAR(128) DEFAULT NULL COMMENT '出版社',
+    `publish_year` INT DEFAULT NULL COMMENT '出版年份',
+    `isbn` VARCHAR(32) DEFAULT NULL COMMENT 'ISBN',
+    `genre` VARCHAR(128) DEFAULT NULL COMMENT '类型（小说、历史等，逗号分隔）',
+    `description` TEXT DEFAULT NULL COMMENT '简介',
+    `cover_url` VARCHAR(512) DEFAULT NULL COMMENT '封面URL',
+    `page_count` INT DEFAULT NULL COMMENT '页数',
+    `language` VARCHAR(32) DEFAULT NULL COMMENT '语言',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    KEY `idx_title` (`title`),
+    KEY `idx_author` (`author`),
+    KEY `idx_publish_year` (`publish_year`),
+    KEY `idx_douban_id` (`douban_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='书籍表';
+
+-- 阅读记录表
+CREATE TABLE IF NOT EXISTS `book_record` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `book_id` BIGINT NOT NULL COMMENT '书籍ID',
+    `read_status` TINYINT NOT NULL DEFAULT 1 COMMENT '阅读状态：1-想读 2-在读 3-已读 4-弃读',
+    `personal_rating` DECIMAL(3,1) DEFAULT NULL COMMENT '个人评分（0-10）',
+    `read_date` DATE DEFAULT NULL COMMENT '阅读日期',
+    `read_progress` DECIMAL(5,2) DEFAULT NULL COMMENT '阅读进度（0-100）',
+    `comment` TEXT DEFAULT NULL COMMENT '评价',
+    `tags` VARCHAR(512) DEFAULT NULL COMMENT '标签（逗号分隔）',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    UNIQUE KEY `uk_user_book` (`user_id`, `book_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_book_id` (`book_id`),
+    KEY `idx_read_status` (`read_status`),
+    KEY `idx_read_date` (`read_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='阅读记录表';
+
+-- ========================================
+-- 旅游相关表
+-- ========================================
+
+-- 旅游地点表
+CREATE TABLE IF NOT EXISTS `travel_place` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '地点ID',
+    `name` VARCHAR(255) NOT NULL COMMENT '地点名称',
+    `country` VARCHAR(64) DEFAULT NULL COMMENT '国家/地区',
+    `city` VARCHAR(128) DEFAULT NULL COMMENT '城市',
+    `address` VARCHAR(512) DEFAULT NULL COMMENT '详细地址',
+    `latitude` DECIMAL(10,7) DEFAULT NULL COMMENT '纬度',
+    `longitude` DECIMAL(10,7) DEFAULT NULL COMMENT '经度',
+    `place_type` TINYINT DEFAULT 1 COMMENT '地点类型：1-城市 2-景点 3-国家 4-其他',
+    `description` TEXT DEFAULT NULL COMMENT '描述',
+    `cover_url` VARCHAR(512) DEFAULT NULL COMMENT '封面URL',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    KEY `idx_name` (`name`),
+    KEY `idx_country` (`country`),
+    KEY `idx_city` (`city`),
+    KEY `idx_place_type` (`place_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='旅游地点表';
+
+-- 旅游记录表
+CREATE TABLE IF NOT EXISTS `travel_record` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `place_id` BIGINT NOT NULL COMMENT '地点ID',
+    `travel_status` TINYINT NOT NULL DEFAULT 1 COMMENT '旅游状态：1-想去 2-计划中 3-已去',
+    `personal_rating` DECIMAL(3,1) DEFAULT NULL COMMENT '个人评分（0-10）',
+    `travel_date` DATE DEFAULT NULL COMMENT '旅游日期',
+    `travel_duration` INT DEFAULT NULL COMMENT '旅游天数',
+    `expense` DECIMAL(10,2) DEFAULT NULL COMMENT '费用',
+    `comment` TEXT DEFAULT NULL COMMENT '评价',
+    `tags` VARCHAR(512) DEFAULT NULL COMMENT '标签（逗号分隔）',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    UNIQUE KEY `uk_user_place` (`user_id`, `place_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_place_id` (`place_id`),
+    KEY `idx_travel_status` (`travel_status`),
+    KEY `idx_travel_date` (`travel_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='旅游记录表';
+
+-- ========================================
+-- 演唱会相关表
+-- ========================================
+
+-- 演唱会表
+CREATE TABLE IF NOT EXISTS `concert` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '演唱会ID',
+    `artist` VARCHAR(255) NOT NULL COMMENT '艺术家/乐队',
+    `title` VARCHAR(255) DEFAULT NULL COMMENT '演出名称',
+    `concert_date` DATETIME DEFAULT NULL COMMENT '演出日期',
+    `venue` VARCHAR(255) DEFAULT NULL COMMENT '演出场地',
+    `city` VARCHAR(128) DEFAULT NULL COMMENT '城市',
+    `country` VARCHAR(64) DEFAULT NULL COMMENT '国家',
+    `concert_type` TINYINT DEFAULT 1 COMMENT '演出类型：1-演唱会 2-音乐节 3-演出 4-其他',
+    `description` TEXT DEFAULT NULL COMMENT '描述',
+    `poster_url` VARCHAR(512) DEFAULT NULL COMMENT '海报URL',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    KEY `idx_artist` (`artist`),
+    KEY `idx_title` (`title`),
+    KEY `idx_concert_date` (`concert_date`),
+    KEY `idx_city` (`city`),
+    KEY `idx_concert_type` (`concert_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='演唱会表';
+
+-- 观演记录表
+CREATE TABLE IF NOT EXISTS `concert_record` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `concert_id` BIGINT NOT NULL COMMENT '演唱会ID',
+    `watch_status` TINYINT NOT NULL DEFAULT 1 COMMENT '观演状态：1-想看 2-已看',
+    `personal_rating` DECIMAL(3,1) DEFAULT NULL COMMENT '个人评分（0-10）',
+    `watch_date` DATE DEFAULT NULL COMMENT '观演日期',
+    `ticket_price` DECIMAL(10,2) DEFAULT NULL COMMENT '票价',
+    `seat_info` VARCHAR(128) DEFAULT NULL COMMENT '座位信息',
+    `comment` TEXT DEFAULT NULL COMMENT '评价',
+    `tags` VARCHAR(512) DEFAULT NULL COMMENT '标签（逗号分隔）',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    UNIQUE KEY `uk_user_concert` (`user_id`, `concert_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_concert_id` (`concert_id`),
+    KEY `idx_watch_status` (`watch_status`),
+    KEY `idx_watch_date` (`watch_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='观演记录表';
+
+-- ========================================
 -- 标签系统（通用）
 -- ========================================
 
@@ -248,7 +407,7 @@ CREATE TABLE IF NOT EXISTS `tag` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '标签ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
     `tag_name` VARCHAR(64) NOT NULL COMMENT '标签名称',
-    `tag_type` VARCHAR(32) NOT NULL COMMENT '标签类型：photo/movie/music/match',
+    `tag_type` VARCHAR(32) NOT NULL COMMENT '标签类型：photo/movie/music/match/book/travel/concert',
     `color` VARCHAR(16) DEFAULT NULL COMMENT '标签颜色',
     `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

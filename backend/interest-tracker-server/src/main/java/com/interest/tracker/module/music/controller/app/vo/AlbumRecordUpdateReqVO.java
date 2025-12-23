@@ -43,8 +43,5 @@ public class AlbumRecordUpdateReqVO {
     @Schema(description = "评价", example = "很好听")
     private String comment;
 
-    @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
-    private String tags;
-
 }
 
