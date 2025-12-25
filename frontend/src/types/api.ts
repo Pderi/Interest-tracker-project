@@ -226,3 +226,168 @@ export interface AlbumRecordUpdateReq {
   comment?: string
 }
 
+/**
+ * 图书分页列表响应（包含统计信息）
+ */
+export interface BookPageWithStats {
+  page: PageResult<BookPageItem>
+  statusCounts: Record<number, number> // key为状态值，value为数量
+}
+
+/**
+ * 图书分页列表项
+ */
+export interface BookPageItem {
+  recordId: number
+  bookId: number
+  title: string
+  author?: string
+  genre?: string
+  coverUrl?: string
+  readStatus: number // 1 想读 2 在读 3 已读 4 弃读
+  personalRating?: number
+  readDate?: string
+  readProgress?: number
+  tags?: string
+  comment?: string
+  createTime: string
+}
+
+/**
+ * 图书详情
+ */
+export interface BookDetail {
+  book: {
+    id: number
+    title: string
+    author?: string
+    publisher?: string
+    publishYear?: number
+    isbn?: string
+    genre?: string
+    description?: string
+    coverUrl?: string
+    pageCount?: number
+    language?: string
+  }
+  record?: {
+    id: number
+    readStatus: number
+    personalRating?: number
+    readDate?: string
+    readProgress?: number
+    comment?: string
+    tags?: string
+  } | null
+}
+
+/**
+ * 图书创建请求（手动录入）
+ */
+export interface BookCreateReq {
+  title: string
+  author?: string
+  genre?: string
+  description?: string
+  coverUrl?: string
+  readStatus?: number // 1 想读 2 在读 3 已读 4 弃读
+  personalRating?: number
+  comment?: string
+}
+
+export interface BookCreateRes {
+  bookId: number
+  recordId: number
+}
+
+/**
+ * 阅读记录更新
+ */
+export interface BookRecordUpdateReq {
+  id?: number
+  readStatus?: number
+  personalRating?: number
+  readDate?: string
+  readProgress?: number
+  comment?: string
+  coverUrl?: string
+  tags?: string
+}
+
+/**
+ * 比赛分页列表响应（包含统计信息）
+ */
+export interface MatchPageWithStats {
+  page: PageResult<MatchPageItem>
+  typeCounts: Record<number, number> // key为类型值，value为数量
+}
+
+/**
+ * 比赛分页列表项
+ */
+export interface MatchPageItem {
+  recordId: number
+  homeTeamName: string
+  awayTeamName: string
+  matchDate: string
+  homeScore?: number
+  awayScore?: number
+  matchType: number // 1 联赛 2 杯赛 3 友谊赛
+  watchType: number // 1 现场 2 直播 3 回放
+  venue?: string
+  notes?: string
+  createTime: string
+}
+
+/**
+ * 比赛详情
+ */
+export interface MatchDetail {
+  recordId: number
+  homeTeamName: string
+  awayTeamName: string
+  matchDate: string
+  homeScore?: number
+  awayScore?: number
+  matchType: number
+  watchType: number
+  venue?: string
+  notes?: string
+  createTime: string
+}
+
+/**
+ * 比赛创建请求
+ */
+export interface MatchCreateReq {
+  homeTeamName: string
+  awayTeamName: string
+  matchDate: string // YYYY-MM-DD
+  homeScore?: number
+  awayScore?: number
+  matchType?: number // 1 联赛 2 杯赛 3 友谊赛
+  watchType?: number // 1 现场 2 直播 3 回放
+  venue?: string
+  notes?: string
+}
+
+export interface MatchCreateRes {
+  recordId: number
+}
+
+/**
+ * 比赛更新请求
+ */
+export interface MatchUpdateReq {
+  id?: number
+  homeTeamName?: string
+  awayTeamName?: string
+  matchDate?: string // YYYY-MM-DD
+  homeScore?: number
+  awayScore?: number
+  matchType?: number
+  watchType?: number
+  venue?: string
+  notes?: string
+}
+

@@ -192,40 +192,16 @@ CREATE TABLE IF NOT EXISTS `album_record` (
 -- ========================================
 -- 球赛相关表
 -- ========================================
-
--- 球队表
-CREATE TABLE IF NOT EXISTS `team` (
-    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '球队ID',
-    `name` VARCHAR(128) NOT NULL COMMENT '球队名称',
-    `league` VARCHAR(128) DEFAULT NULL COMMENT '联赛',
-    `logo_url` VARCHAR(512) DEFAULT NULL COMMENT '队徽URL',
-    `country` VARCHAR(64) DEFAULT NULL COMMENT '国家',
-    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
-    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
-    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
-    KEY `idx_league` (`league`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='球队表';
-
--- 用户关注球队表
-CREATE TABLE IF NOT EXISTS `user_team` (
-    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关联ID',
-    `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `team_id` BIGINT NOT NULL COMMENT '球队ID',
-    `follow_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
-    UNIQUE KEY `uk_user_team` (`user_id`, `team_id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_team_id` (`team_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户关注球队表';
+-- 球赛相关表
+-- ========================================
 
 -- 比赛记录表
 CREATE TABLE IF NOT EXISTS `match_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `home_team_id` BIGINT NOT NULL COMMENT '主队ID',
-    `away_team_id` BIGINT NOT NULL COMMENT '客队ID',
-    `match_date` DATETIME NOT NULL COMMENT '比赛时间',
+    `home_team_name` VARCHAR(128) NOT NULL COMMENT '主队名称',
+    `away_team_name` VARCHAR(128) NOT NULL COMMENT '客队名称',
+    `match_date` DATE NOT NULL COMMENT '比赛日期',
     `home_score` INT DEFAULT NULL COMMENT '主队得分',
     `away_score` INT DEFAULT NULL COMMENT '客队得分',
     `match_type` TINYINT DEFAULT 1 COMMENT '比赛类型：1-联赛 2-杯赛 3-友谊赛',
@@ -239,8 +215,8 @@ CREATE TABLE IF NOT EXISTS `match_record` (
     `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
     KEY `idx_user_id` (`user_id`),
     KEY `idx_match_date` (`match_date`),
-    KEY `idx_home_team` (`home_team_id`),
-    KEY `idx_away_team` (`away_team_id`)
+    KEY `idx_home_team_name` (`home_team_name`),
+    KEY `idx_away_team_name` (`away_team_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='比赛记录表';
 
 -- ========================================

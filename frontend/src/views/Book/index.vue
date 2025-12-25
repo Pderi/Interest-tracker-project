@@ -68,24 +68,24 @@
       >
         <template
           v-for="book in bookList"
-          :key="book.id"
+          :key="book.recordId"
         >
           <div class="flex flex-col gap-2">
             <!-- 书籍卡片 -->
             <div
               class="card-3d group cursor-pointer"
-              @click="goDetail()"
+              @click="goDetail(book.bookId)"
             >
               <div class="card-3d-inner rounded-2xl overflow-hidden border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect bg-transparent">
                 <!-- 封面 -->
                 <div class="relative aspect-[3/4] overflow-hidden">
                   <img
-                    v-if="book.coverUrl && !imageErrorMap[book.id]"
+                    v-if="book.coverUrl && !imageErrorMap[book.bookId]"
                     :src="book.coverUrl"
                     :alt="book.title"
                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
-                    @error="handleImageError(book.id)"
+                    @error="handleImageError(book.bookId)"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
                     <el-icon :size="48" class="text-[#c3cfe2]/40">
@@ -120,9 +120,24 @@
                   <h3 class="text-lg font-semibold text-white line-clamp-1">{{ book.title }}</h3>
                   <p class="text-sm text-[#00d4ff]/80 line-clamp-1">{{ book.author }}</p>
                   <p class="text-xs text-gray-400">
-                    <span v-if="book.publishYear">{{ book.publishYear }}</span>
-                    <span v-if="book.readDate"> · 已读于 {{ book.readDate }}</span>
+                    <span v-if="book.readDate">已读于 {{ book.readDate }}</span>
                   </p>
+
+                  <!-- 图书类型 -->
+                  <div
+                    v-if="book.genre"
+                    class="flex flex-wrap gap-2 mt-1"
+                  >
+                    <el-tag
+                      v-for="genre in book.genre.split(',')"
+                      :key="genre"
+                      size="small"
+                      effect="plain"
+                      class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
+                    >
+                      {{ genre }}
+                    </el-tag>
+                  </div>
 
                   <!-- 标签 -->
                   <div
@@ -145,7 +160,7 @@
                       text
                       size="small"
                       class="!text-[#00d4ff] hover:!text-[#00ffcc]"
-                      @click.stop="openEditDialog()"
+                      @click.stop="openEditDialog(book)"
                     >
                       编辑
                     </el-button>
@@ -154,7 +169,7 @@
                       confirm-button-text="删除"
                       cancel-button-text="取消"
                       confirm-button-type="danger"
-                      @confirm="handleDelete(book.id)"
+                      @confirm="handleDelete(book.recordId)"
                     >
                       <template #reference>
                         <el-button
@@ -209,16 +224,124 @@
         />
       </div>
     </div>
+
+    <!-- 新建 / 编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? '添加图书记录' : '编辑图书记录'"
+      width="520px"
+      destroy-on-close
+      class="book-dialog"
+    >
+      <div class="book-form-wrapper glass-effect">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-width="80px"
+          class="book-form"
+        >
+          <el-form-item
+            label="书名"
+            prop="title"
+          >
+            <el-input v-model="form.title" placeholder="请输入书名" />
+          </el-form-item>
+
+          <el-form-item label="作者">
+            <el-input v-model="form.author" placeholder="请输入作者" />
+          </el-form-item>
+
+          <el-form-item label="类型">
+            <el-input
+              v-model="form.genre"
+              placeholder="例如：小说,魔幻现实主义"
+            />
+          </el-form-item>
+
+          <el-form-item label="简介">
+            <el-input
+              v-model="form.description"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入简介"
+            />
+          </el-form-item>
+
+          <el-form-item label="封面">
+            <div class="w-full flex items-center gap-3">
+              <el-input
+                v-model="form.coverUrl"
+                placeholder="支持粘贴图片地址，后续可接入上传"
+              />
+              <div
+                v-if="form.coverUrl"
+                class="cover-preview"
+              >
+                <img
+                  :src="form.coverUrl"
+                  alt="cover preview"
+                />
+              </div>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="阅读状态">
+            <el-select v-model="form.readStatus">
+              <el-option :value="1" label="想读" />
+              <el-option :value="2" label="在读" />
+              <el-option :value="3" label="已读" />
+              <el-option :value="4" label="弃读" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="个人评分">
+            <el-input-number
+              v-model="form.personalRating"
+              :min="0"
+              :max="10"
+              :step="0.5"
+              controls-position="right"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="评价">
+            <el-input
+              v-model="form.comment"
+              type="textarea"
+              :rows="3"
+              placeholder="说点什么吧"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button
+            type="primary"
+            :loading="submitLoading"
+            @click="handleSubmit"
+          >
+            确认
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElDialog, ElForm, ElFormItem, ElInput, ElInputNumber, ElButton, FormInstance, FormRules } from 'element-plus'
 import { Plus, Document, StarFilled, Search, ChatLineRound } from '@element-plus/icons-vue'
+import { getBookPage, createBook, updateBookRecord, deleteBookRecord } from '@/api/book'
+import type { BookPageItem, BookCreateReq, BookRecordUpdateReq } from '@/types/api'
 
 const loading = ref(false)
-const bookList = ref<any[]>([])
+const bookList = ref<BookPageItem[]>([])
 const total = ref(0)
 const pageNo = ref(1)
 const pageSize = ref(8)
@@ -236,119 +359,23 @@ const statusOptions = [
 
 const imageErrorMap = reactive<Record<number, boolean>>({})
 
-// 假数据
-const mockBooks = [
-  {
-    id: 1,
-    title: '百年孤独',
-    author: '加西亚·马尔克斯',
-    coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop',
-    publishYear: 1967,
-    readStatus: 3,
-    personalRating: 9.5,
-    readDate: '2025-01-15',
-    tags: '魔幻现实主义,文学经典',
-    comment: '一部震撼人心的魔幻现实主义巨作，马尔克斯的想象力令人叹为观止。',
-  },
-  {
-    id: 2,
-    title: '1984',
-    author: '乔治·奥威尔',
-    coverUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop',
-    publishYear: 1949,
-    readStatus: 3,
-    personalRating: 9.8,
-    readDate: '2025-01-10',
-    tags: '反乌托邦,政治',
-    comment: '对极权主义的深刻警示，至今仍具有强烈的现实意义。',
-  },
-  {
-    id: 3,
-    title: '三体',
-    author: '刘慈欣',
-    coverUrl: 'https://images.unsplash.com/photo-1532012192227-25953d6b0743?w=400&h=600&fit=crop',
-    publishYear: 2006,
-    readStatus: 2,
-    personalRating: 9.2,
-    readDate: null,
-    tags: '科幻,硬科幻',
-    comment: null,
-  },
-  {
-    id: 4,
-    title: '活着',
-    author: '余华',
-    coverUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=600&fit=crop',
-    publishYear: 1993,
-    readStatus: 3,
-    personalRating: 9.0,
-    readDate: '2024-12-20',
-    tags: '当代文学,人生',
-    comment: '用最朴实的语言讲述最深刻的人生，让人深思。',
-  },
-  {
-    id: 5,
-    title: '人类简史',
-    author: '尤瓦尔·赫拉利',
-    coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop',
-    publishYear: 2011,
-    readStatus: 1,
-    personalRating: null,
-    readDate: null,
-    tags: '历史,人类学',
-    comment: null,
-  },
-  {
-    id: 6,
-    title: '解忧杂货店',
-    author: '东野圭吾',
-    coverUrl: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=400&h=600&fit=crop',
-    publishYear: 2012,
-    readStatus: 3,
-    personalRating: 8.5,
-    readDate: '2024-11-15',
-    tags: '推理,治愈',
-    comment: '温暖治愈的故事，让人感受到人性的美好。',
-  },
-]
-
-function loadBooks() {
+async function loadBooks() {
   loading.value = true
-  setTimeout(() => {
-    let filtered = [...mockBooks]
-    
-    // 状态筛选
-    if (filterStatus.value !== 'all') {
-      filtered = filtered.filter(book => book.readStatus === filterStatus.value)
-    }
-    
-    // 关键词搜索
-    if (keyword.value) {
-      const kw = keyword.value.toLowerCase()
-      filtered = filtered.filter(book => 
-        book.title.toLowerCase().includes(kw) || 
-        book.author.toLowerCase().includes(kw)
-      )
-    }
-    
-    // 计算总数
-    total.value = filtered.length
-    
-    // 分页
-    const start = (pageNo.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    bookList.value = filtered.slice(start, end)
-    
-    // 计算状态数量
-    statusCounts.value = {
-      1: mockBooks.filter(b => b.readStatus === 1).length,
-      2: mockBooks.filter(b => b.readStatus === 2).length,
-      3: mockBooks.filter(b => b.readStatus === 3).length,
-      4: mockBooks.filter(b => b.readStatus === 4).length,
-    }
-    
+  try {
+    const res = await getBookPage({
+      pageNo: pageNo.value,
+      pageSize: pageSize.value,
+      readStatus: filterStatus.value === 'all' ? undefined : filterStatus.value,
+      keyword: keyword.value || undefined,
+    })
+    bookList.value = res.data.page.list
+    total.value = res.data.page.total
+    statusCounts.value = res.data.statusCounts
+  } catch (e) {
+    // 已统一处理
+  } finally {
     loading.value = false
-  }, 300)
+  }
 }
 
 function changeStatus(value: number | 'all') {
@@ -386,25 +413,116 @@ function handleImageError(id: number) {
   imageErrorMap[id] = true
 }
 
-function goDetail() {
+function goDetail(bookId?: number) {
+  if (!bookId) return
   // 暂时不实现详情页
   ElMessage.info('详情页开发中...')
 }
 
+// ========== 新建 / 编辑表单 ==========
+type DialogMode = 'create' | 'edit'
+
+const dialogVisible = ref(false)
+const dialogMode = ref<DialogMode>('create')
+const formRef = ref<FormInstance>()
+
+const form = reactive<{
+  recordId?: number
+  title: string
+  author?: string
+  genre?: string
+  description?: string
+  coverUrl?: string
+  personalRating?: number
+  comment?: string
+  readStatus?: number
+}>({
+  title: '',
+})
+
+const rules: FormRules = {
+  title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
+}
+
+function resetForm() {
+  form.recordId = undefined
+  form.title = ''
+  form.author = ''
+  form.genre = ''
+  form.description = ''
+  form.coverUrl = ''
+  form.personalRating = undefined
+  form.comment = ''
+  form.readStatus = 1
+}
+
 function openCreateDialog() {
-  ElMessage.info('添加功能开发中...')
+  dialogMode.value = 'create'
+  resetForm()
+  dialogVisible.value = true
 }
 
-function openEditDialog() {
-  ElMessage.info('编辑功能开发中...')
+function openEditDialog(item: BookPageItem) {
+  dialogMode.value = 'edit'
+  form.recordId = item.recordId
+  form.title = item.title
+  form.author = item.author
+  form.coverUrl = item.coverUrl
+  form.readStatus = item.readStatus
+  form.personalRating = item.personalRating
+  form.comment = item.comment || ''
+  dialogVisible.value = true
 }
 
-function handleDelete(id: number) {
-  const index = mockBooks.findIndex(b => b.id === id)
-  if (index > -1) {
-    mockBooks.splice(index, 1)
+const submitLoading = ref(false)
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  await formRef.value.validate()
+
+  try {
+    submitLoading.value = true
+    if (dialogMode.value === 'create') {
+      await createBook({
+        title: form.title,
+        author: form.author,
+        genre: form.genre,
+        description: form.description,
+        coverUrl: form.coverUrl,
+        readStatus: form.readStatus,
+        personalRating: form.personalRating,
+        comment: form.comment,
+      })
+      ElMessage.success('创建成功')
+    } else if (dialogMode.value === 'edit' && form.recordId) {
+      await updateBookRecord(form.recordId, {
+        id: form.recordId,
+        readStatus: form.readStatus,
+        personalRating: form.personalRating,
+        coverUrl: form.coverUrl,
+        comment: form.comment,
+      })
+      ElMessage.success('更新成功')
+    }
+    dialogVisible.value = false
     loadBooks()
+  } catch (e) {
+    // 已统一处理
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDelete(recordId: number) {
+  try {
+    await deleteBookRecord(recordId)
     ElMessage.success('删除成功')
+    if (bookList.value.length === 1 && pageNo.value > 1) {
+      pageNo.value -= 1
+    }
+    loadBooks()
+  } catch (e) {
+    // 已统一处理
   }
 }
 
@@ -494,6 +612,114 @@ onMounted(() => {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 弹窗在小屏下的兼容处理与美化 */
+:deep(.book-dialog) {
+  /* 桌面端：居中显示 */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0 !important;
+  max-height: calc(100vh - 20px);
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top left, rgba(0, 212, 255, 0.08), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(0, 255, 204, 0.06), transparent 55%),
+    rgba(10, 14, 35, 0.96);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.7),
+    0 0 30px rgba(0, 212, 255, 0.25);
+}
+
+:deep(.book-dialog .el-dialog__header) {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+:deep(.book-dialog .el-dialog__title) {
+  color: #e5f5ff;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+:deep(.book-dialog .el-dialog__body) {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px;
+}
+
+:deep(.book-dialog .el-dialog__footer) {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.book-form-wrapper {
+  padding: 16px 18px 4px;
+  border-radius: 14px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(0, 212, 255, 0.05),
+    rgba(0, 0, 0, 0.3)
+  );
+}
+
+.book-form {
+  --el-text-color-regular: #e5e7f0;
+}
+
+:deep(.book-dialog .el-form-item__label) {
+  color: #cbd5ff;
+}
+
+.cover-preview {
+  width: 56px;
+  height: 84px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.8),
+    0 0 15px rgba(0, 212, 255, 0.35);
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 更小屏幕（如 iPhone SE）下，弹窗改为"近乎全屏"以避免被底部遮挡 */
+@media (max-width: 600px) {
+  :deep(.book-dialog) {
+    transform: none;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh;
+    max-height: 100vh;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+    border-radius: 0;
+    border: none;
+  }
+
+  :deep(.book-dialog .el-dialog__body) {
+    padding: 12px 12px 80px;
+  }
+
+  :deep(.book-dialog .el-dialog__footer) {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 60px; /* 预留底部 TabBar 高度，避免被遮挡 */
+    z-index: 2000;
+    background: linear-gradient(to top, rgba(10, 14, 35, 0.98), transparent);
+    padding-top: 8px;
+  }
 }
 </style>
 
