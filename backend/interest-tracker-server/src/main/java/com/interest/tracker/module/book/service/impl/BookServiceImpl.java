@@ -49,12 +49,7 @@ public class BookServiceImpl implements BookService {
         }
 
         // 1. 创建 Book
-        BookDO bookDO = new BookDO();
-        bookDO.setTitle(reqVO.getTitle());
-        bookDO.setAuthor(reqVO.getAuthor());
-        bookDO.setGenre(reqVO.getGenre());
-        bookDO.setDescription(reqVO.getDescription());
-        bookDO.setCoverUrl(reqVO.getCoverUrl());
+        BookDO bookDO = BeanUtils.toBean(reqVO, BookDO.class);
         bookMapper.insert(bookDO);
 
         // 2. 检查是否已存在阅读记录
@@ -64,17 +59,13 @@ public class BookServiceImpl implements BookService {
         }
 
         // 3. 创建阅读记录
-        BookRecordDO recordDO = new BookRecordDO();
+        BookRecordDO recordDO = BeanUtils.toBean(reqVO, BookRecordDO.class);
         recordDO.setUserId(userId);
         recordDO.setBookId(bookDO.getId());
         // 设置阅读状态，默认为"想读"
-        if (reqVO.getReadStatus() != null) {
-            recordDO.setReadStatus(reqVO.getReadStatus());
-        } else {
+        if (recordDO.getReadStatus() == null) {
             recordDO.setReadStatus(ReadStatusEnum.WANT_TO_READ.getValue()); // 默认"想读"
         }
-        recordDO.setPersonalRating(reqVO.getPersonalRating());
-        recordDO.setComment(reqVO.getComment());
         bookRecordMapper.insert(recordDO);
 
         // 4. 返回结果

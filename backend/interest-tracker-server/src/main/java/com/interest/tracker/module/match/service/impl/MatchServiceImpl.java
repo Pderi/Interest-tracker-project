@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,26 +47,18 @@ public class MatchServiceImpl implements MatchService {
         }
 
         // 2. 创建比赛记录
-        MatchRecordDO recordDO = new MatchRecordDO();
+        MatchRecordDO recordDO = BeanUtils.toBean(reqVO, MatchRecordDO.class);
         recordDO.setUserId(userId);
+        // 处理字符串 trim
         recordDO.setHomeTeamName(reqVO.getHomeTeamName().trim());
         recordDO.setAwayTeamName(reqVO.getAwayTeamName().trim());
-        recordDO.setMatchDate(reqVO.getMatchDate());
-        recordDO.setHomeScore(reqVO.getHomeScore());
-        recordDO.setAwayScore(reqVO.getAwayScore());
         // 设置默认值
-        if (reqVO.getMatchType() != null) {
-            recordDO.setMatchType(reqVO.getMatchType());
-        } else {
+        if (recordDO.getMatchType() == null) {
             recordDO.setMatchType(1); // 默认联赛
         }
-        if (reqVO.getWatchType() != null) {
-            recordDO.setWatchType(reqVO.getWatchType());
-        } else {
+        if (recordDO.getWatchType() == null) {
             recordDO.setWatchType(2); // 默认直播
         }
-        recordDO.setVenue(reqVO.getVenue());
-        recordDO.setNotes(reqVO.getNotes());
         matchRecordMapper.insert(recordDO);
 
         // 3. 返回结果
