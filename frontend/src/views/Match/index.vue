@@ -2,25 +2,20 @@
   <div class="match-page">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold neon-text mb-4 sm:mb-0 float-animation">球赛</h1>
-      <el-button 
-        type="primary" 
-        :icon="Plus" 
-        @click="handleAdd"
-        class="!bg-[#00d4ff] !border-[#00d4ff] hover:!bg-[#00ffcc] hover:!border-[#00ffcc] !text-[#1a1a2e] shadow-lg shadow-[#00d4ff]/30 hover:shadow-[#00d4ff]/50 transition-all glow-effect font-semibold"
-      >
+      <AnimatedButton variant="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
         添加记录
-      </el-button>
+      </AnimatedButton>
     </div>
 
     <!-- 筛选栏 -->
     <div class="mb-6 flex flex-wrap gap-3">
-      <el-button 
-        v-for="type in typeOptions" 
+      <AnimatedButton
+        v-for="type in typeOptions"
         :key="type.value"
-        :type="filterType === type.value ? 'primary' : 'default'"
+        :variant="filterType === type.value ? 'primary' : 'secondary'"
         size="small"
         @click="changeType(type.value)"
-        :class="filterType === type.value ? '!bg-[#ff6b6b] !border-[#ff6b6b]' : ''"
       >
         <span>{{ type.label }}</span>
         <span
@@ -28,32 +23,47 @@
           class="ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium"
           :class="filterType === type.value 
             ? 'bg-white/20 text-white' 
-            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+            : 'bg-white/10 text-gray-300'"
         >
           {{ typeCounts[type.value] }}
         </span>
-      </el-button>
+      </AnimatedButton>
     </div>
 
     <!-- 比赛记录列表 -->
-    <div
-      v-loading="loading"
-      class="min-h-[120px]"
-    >
-      <div
-        v-if="filteredMatches.length === 0 && !loading"
-        class="py-10 text-center text-gray-400"
-      >
-        暂无记录，点击右上角「添加记录」开始你的观赛之旅。
+    <div class="min-h-[120px] relative">
+      <!-- 骨架屏加载 -->
+      <div v-if="loading" class="space-y-4 sm:space-y-6">
+        <SkeletonCard v-for="i in 3" :key="`skeleton-${i}`" />
       </div>
+      
+      <EmptyState
+        v-else-if="filteredMatches.length === 0"
+        title="暂无记录"
+        description="点击右上角「添加记录」开始你的观赛之旅"
+      >
+        <template #icon>
+          <el-icon :size="64" class="text-gray-500">
+            <Trophy />
+          </el-icon>
+        </template>
+        <template #action>
+          <AnimatedButton variant="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            添加第一条记录
+          </AnimatedButton>
+        </template>
+      </EmptyState>
 
       <div v-else class="space-y-4 sm:space-y-6">
-        <div
-          v-for="match in filteredMatches"
+        <AnimatedCard
+          v-for="(match, index) in filteredMatches"
           :key="match.recordId"
-          class="card-3d group"
+          variant="glass"
+          class="match-card-wrapper group"
+          :style="{ animationDelay: `${index * 100}ms` }"
         >
-          <div class="card-3d-inner rounded-2xl glass-effect border border-white/10 hover:border-[#00d4ff]/40 transition-all duration-500 overflow-hidden glow-effect relative match-card">
+          <div class="rounded-2xl overflow-hidden relative match-card">
             <!-- 背景装饰 -->
             <div class="absolute inset-0 opacity-30 pointer-events-none">
               <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00d4ff]/20 to-transparent rounded-full blur-3xl"></div>
@@ -77,15 +87,15 @@
                     <span>{{ formatDateTime(match.matchDate) }}</span>
                   </div>
                 </div>
-                <div class="flex gap-2">
-                  <el-button
-                    text
+                <div class="flex gap-2 match-actions">
+                  <AnimatedButton
+                    variant="outline"
                     size="small"
-                    class="!text-[#00d4ff] hover:!text-[#00ffcc] hover:!bg-[#00d4ff]/10 transition-all"
                     @click.stop="openEditDialog(match)"
+                    class="action-btn edit-btn"
                   >
                     编辑
-                  </el-button>
+                  </AnimatedButton>
                   <el-popconfirm
                     title="确定删除该记录？"
                     confirm-button-text="删除"
@@ -94,14 +104,12 @@
                     @confirm="handleDelete(match.recordId)"
                   >
                     <template #reference>
-                      <el-button
-                        text
-                        size="small"
-                        class="!text-red-400 hover:!text-red-300 hover:!bg-red-500/10 transition-all"
+                      <button
                         @click.stop
+                        class="action-btn delete-btn"
                       >
                         删除
-                      </el-button>
+                      </button>
                     </template>
                   </el-popconfirm>
                 </div>
@@ -172,13 +180,13 @@
               </div>
             </div>
           </div>
-        </div>
+        </AnimatedCard>
       </div>
 
       <!-- 分页 -->
       <div
         v-if="total > 0"
-        class="mt-6 flex justify-end"
+        class="mt-6 flex justify-end pagination-wrapper"
       >
         <el-pagination
           v-model:current-page="pageNo"
@@ -188,6 +196,7 @@
           :page-sizes="[10, 20, 50]"
           @current-change="loadMatches"
           @size-change="loadMatches"
+          class="animated-pagination"
         />
       </div>
     </div>
@@ -297,14 +306,16 @@
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button
-            type="primary"
+          <AnimatedButton variant="secondary" @click="dialogVisible = false">
+            取消
+          </AnimatedButton>
+          <AnimatedButton
+            variant="primary"
             :loading="submitLoading"
             @click="handleSubmit"
           >
             确认
-          </el-button>
+          </AnimatedButton>
         </span>
       </template>
     </el-dialog>
@@ -318,6 +329,12 @@ import { Plus, Trophy, Location, MapLocation, Calendar, ChatLineRound } from '@e
 import { getMatchPage, createMatch, updateMatch, deleteMatch } from '@/api/match'
 import type { MatchPageItem, MatchCreateReq, MatchUpdateReq } from '@/types/api'
 import dayjs from 'dayjs'
+import { 
+  AnimatedButton, 
+  AnimatedCard, 
+  EmptyState,
+  SkeletonCard
+} from '@/components/uiverse'
 
 const loading = ref(false)
 const matchList = ref<MatchPageItem[]>([])
@@ -547,6 +564,32 @@ onMounted(() => {
 <style scoped>
 .match-page {
   min-height: 100%;
+  animation: pageFadeIn 0.4s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 比赛卡片进入动画 */
+.match-card-wrapper {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .line-clamp-1 {
@@ -566,10 +609,11 @@ onMounted(() => {
 /* 比赛卡片样式 */
 .match-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 212, 255, 0.03) 50%, rgba(0, 255, 204, 0.03) 100%);
+  transition: all 0.3s ease;
 }
 
-.match-card:hover {
-  transform: translateY(-2px);
+.match-card-wrapper:hover .match-card {
+  transform: translateY(-4px);
   box-shadow: 0 20px 40px rgba(0, 212, 255, 0.15), 0 0 30px rgba(0, 212, 255, 0.1);
 }
 
@@ -587,8 +631,83 @@ onMounted(() => {
   transition: opacity 0.3s;
 }
 
-.match-card:hover::before {
+.match-card-wrapper:hover .match-card::before {
   opacity: 1;
+}
+
+/* 操作按钮动画 */
+.match-actions {
+  animation: actionsSlideUp 0.4s ease-out 0.2s both;
+}
+
+@keyframes actionsSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-btn {
+  transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+  transform: translateX(-2px);
+}
+
+.delete-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* 分页动画 */
+.pagination-wrapper {
+  animation: paginationFadeIn 0.5s ease-out;
+}
+
+@keyframes paginationFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:deep(.animated-pagination .el-pager li) {
+  transition: all 0.3s ease;
+}
+
+:deep(.animated-pagination .el-pager li:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+:deep(.animated-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #00d4ff, #00ffcc);
+  color: #1a1a2e;
+  font-weight: 600;
 }
 
 /* 弹窗样式 */
@@ -608,6 +727,18 @@ onMounted(() => {
   box-shadow:
     0 18px 45px rgba(0, 0, 0, 0.7),
     0 0 30px rgba(0, 212, 255, 0.25);
+  animation: dialogSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 :deep(.match-dialog .el-dialog__header) {

@@ -2,26 +2,22 @@
   <div class="music-page">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold neon-text mb-4 sm:mb-0 float-animation">音乐</h1>
-      <el-button
-        type="primary"
-        :icon="Plus"
-        @click="openCreateDialog"
-        class="!bg-[#00d4ff] !border-[#00d4ff] hover:!bg-[#00ffcc] hover:!border-[#00ffcc] !text-[#1a1a2e] shadow-lg shadow-[#00d4ff]/30 hover:shadow-[#00d4ff]/50 transition-all glow-effect font-semibold"
-      >
+      <AnimatedButton variant="primary" @click="openCreateDialog">
+        <el-icon><Plus /></el-icon>
         添加记录
-      </el-button>
+      </AnimatedButton>
     </div>
 
     <!-- 筛选栏 -->
     <div class="mb-6">
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 w-full">
-          <el-button
+          <AnimatedButton
             v-for="status in statusOptions"
             :key="status.value"
-            :type="filterStatus === status.value ? 'primary' : 'default'"
+            :variant="filterStatus === status.value ? 'primary' : 'secondary'"
+            size="small"
             @click="changeStatus(status.value)"
-            :class="filterStatus === status.value ? '!bg-[#00d4ff] !border-[#00d4ff]' : ''"
           >
             <span>{{ status.label }}</span>
             <span
@@ -29,89 +25,104 @@
               class="ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium"
               :class="filterStatus === status.value 
                 ? 'bg-white/20 text-white' 
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                : 'bg-white/10 text-gray-300'"
             >
               {{ statusCounts[status.value] }}
             </span>
-          </el-button>
+          </AnimatedButton>
         </div>
-        <el-input
+        <AnimatedSearch
           v-model="keyword"
           placeholder="搜索专辑名、艺术家…"
-          clearable
-          class="w-full"
-          @keyup.enter="handleSearch"
+          @enter="handleSearch"
           @clear="handleSearch"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
+        />
       </div>
     </div>
 
     <!-- 专辑卡片网格 -->
-    <div
-      v-loading="loading"
-      class="min-h-[120px]"
-    >
-      <div
-        v-if="albumList.length === 0 && !loading"
-        class="py-10 text-center text-gray-400"
-      >
-        暂无记录，点击右上角「添加记录」开始你的音乐之旅。
+    <div class="min-h-[120px] relative">
+      <!-- 骨架屏加载 -->
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <SkeletonCard v-for="i in pageSize" :key="`skeleton-${i}`" />
       </div>
+      
+      <EmptyState
+        v-else-if="albumList.length === 0"
+        title="暂无记录"
+        description="点击右上角「添加记录」开始你的音乐之旅"
+      >
+        <template #icon>
+          <el-icon :size="64" class="text-gray-500">
+            <Headset />
+          </el-icon>
+        </template>
+        <template #action>
+          <AnimatedButton variant="primary" @click="openCreateDialog">
+            <el-icon><Plus /></el-icon>
+            添加第一条记录
+          </AnimatedButton>
+        </template>
+      </EmptyState>
 
       <div
         v-else
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
       >
         <template
-          v-for="album in albumList"
+          v-for="(album, index) in albumList"
           :key="album.recordId"
         >
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-2 music-card-wrapper" :style="{ animationDelay: `${index * 50}ms` }">
             <!-- 音乐卡片 -->
-            <div
-              class="card-3d group cursor-pointer"
+            <AnimatedCard
+              variant="3d"
+              class="group cursor-pointer"
               @click="goDetail(album.albumId)"
             >
-              <div class="card-3d-inner rounded-2xl overflow-hidden border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect bg-transparent">
+              <div class="rounded-2xl overflow-hidden">
                 <!-- 封面 -->
-                <div class="relative aspect-square overflow-hidden">
+                <div class="relative aspect-square overflow-hidden music-poster-container">
+                  <div class="poster-overlay"></div>
                   <img
                     v-if="album.coverUrl && !imageErrorMap[album.albumId]"
                     :src="album.coverUrl"
                     :alt="album.title"
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    class="music-poster w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
                     @error="handleImageError(album.albumId)"
                   />
-                  <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
+                  <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10 poster-placeholder">
                     <el-icon :size="48" class="text-[#c3cfe2]/40">
                       <Headset />
                     </el-icon>
                   </div>
 
                   <!-- 状态标签 -->
-                  <div class="absolute top-3 right-3">
-                    <el-tag
-                      :type="getStatusType(album.listenStatus)"
-                      size="small"
-                      effect="dark"
-                      class="backdrop-blur-md"
-                    >
-                      {{ getStatusLabel(album.listenStatus) }}
-                    </el-tag>
+                  <div class="absolute top-3 right-3 status-badge-wrapper">
+                    <div class="status-badge" :class="`status-badge-${album.listenStatus}`">
+                      <div class="status-badge-glow"></div>
+                      <div class="status-badge-ripple"></div>
+                      <el-tag
+                        :type="getStatusType(album.listenStatus)"
+                        size="small"
+                        effect="dark"
+                        class="backdrop-blur-md status-tag"
+                        @click.stop="handleStatusClick(album)"
+                        @mouseenter="handleStatusHover"
+                      >
+                        <span class="status-text">{{ getStatusLabel(album.listenStatus) }}</span>
+                      </el-tag>
+                    </div>
                   </div>
 
                   <!-- 评分 -->
                   <div
                     v-if="album.personalRating != null"
-                    class="absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
+                    class="rating-badge absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
                   >
-                    <el-icon class="text-yellow-400"><StarFilled /></el-icon>
-                    <span class="text-white text-sm font-semibold">{{ album.personalRating }}</span>
+                    <el-icon class="text-yellow-400 rating-star"><StarFilled /></el-icon>
+                    <span class="text-white text-sm font-semibold rating-value">{{ album.personalRating }}</span>
                   </div>
                 </div>
 
@@ -128,28 +139,28 @@
                   <!-- 音乐类型 -->
                   <div
                     v-if="album.genre"
-                    class="flex flex-wrap gap-2 mt-1"
+                    class="flex flex-wrap gap-2 mt-1 music-tags"
                   >
-                    <el-tag
-                      v-for="genre in album.genre.split(',')"
+                    <AnimatedTag
+                      v-for="(genre, tagIndex) in album.genre.split(',')"
                       :key="genre"
-                      size="small"
-                      effect="plain"
-                      class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
+                      variant="glow"
+                      :animated="tagIndex % 2 === 0"
+                      class="music-tag-item"
                     >
                       {{ genre }}
-                    </el-tag>
+                    </AnimatedTag>
                   </div>
 
-                  <div class="mt-2 flex justify-between items-center">
-                    <el-button
-                      text
+                  <div class="mt-2 flex justify-between items-center music-actions">
+                    <AnimatedButton
+                      variant="outline"
                       size="small"
-                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
                       @click.stop="openEditDialog(album)"
+                      class="action-btn edit-btn"
                     >
                       编辑
-                    </el-button>
+                    </AnimatedButton>
                     <el-popconfirm
                       title="确定删除该记录？"
                       confirm-button-text="删除"
@@ -158,26 +169,26 @@
                       @confirm="handleDelete(album.recordId)"
                     >
                       <template #reference>
-                        <el-button
-                          text
-                          size="small"
-                          class="!text-red-400 hover:!text-red-300"
+                        <button
+                          @click.stop
+                          class="action-btn delete-btn"
                         >
                           删除
-                        </el-button>
+                        </button>
                       </template>
                     </el-popconfirm>
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimatedCard>
 
             <!-- 评价卡片 -->
-            <div
+            <AnimatedCard
               v-if="album.comment"
-              class="card-3d"
+              variant="glass"
+              class="comment-card"
             >
-              <div class="card-3d-inner rounded-2xl glass-effect border border-white/10 p-4 hover:border-[#00d4ff]/20 transition-all">
+              <div class="p-4">
                 <div class="flex items-start gap-3">
                   <el-icon class="text-[#00d4ff]/60 mt-0.5 flex-shrink-0">
                     <ChatLineRound />
@@ -189,7 +200,7 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimatedCard>
           </div>
         </template>
       </div>
@@ -197,7 +208,7 @@
       <!-- 分页 -->
       <div
         v-if="total > 0"
-        class="mt-6 flex justify-end"
+        class="mt-6 flex justify-end pagination-wrapper"
       >
         <el-pagination
           v-model:current-page="pageNo"
@@ -207,6 +218,7 @@
           :page-sizes="[8, 16, 32]"
           @current-change="loadAlbums"
           @size-change="loadAlbums"
+          class="animated-pagination"
         />
       </div>
     </div>
@@ -352,14 +364,16 @@
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button
-            type="primary"
+          <AnimatedButton variant="secondary" @click="dialogVisible = false">
+            取消
+          </AnimatedButton>
+          <AnimatedButton
+            variant="primary"
             :loading="submitLoading"
             @click="handleSubmit"
           >
             确认
-          </el-button>
+          </AnimatedButton>
         </span>
       </template>
     </el-dialog>
@@ -373,6 +387,14 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Headset, StarFilled, Search, ChatLineRound } from '@element-plus/icons-vue'
 import { getAlbumPage, createAlbum, getAlbumDetail, updateAlbum, updateAlbumRecord, deleteAlbumRecord } from '@/api/music'
 import type { AlbumPageItem } from '@/types/api'
+import { 
+  AnimatedButton, 
+  AnimatedCard, 
+  EmptyState,
+  SkeletonCard,
+  AnimatedSearch,
+  AnimatedTag
+} from '@/components/uiverse'
 
 const router = useRouter()
 
@@ -455,6 +477,16 @@ function handleImageError(albumId: number) {
 function goDetail(albumId: number) {
   if (!albumId) return
   router.push(`/music/${albumId}`)
+}
+
+function handleStatusClick(album: AlbumPageItem) {
+  changeStatus(album.listenStatus)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  ElMessage.success(`已筛选：${getStatusLabel(album.listenStatus)}`)
+}
+
+function handleStatusHover() {
+  // 可以在这里添加悬停时的额外逻辑
 }
 
 // ========== 新建 / 编辑表单 ==========
@@ -632,10 +664,405 @@ onMounted(() => {
 <style scoped>
 .music-page {
   min-height: 100%;
+  animation: pageFadeIn 0.4s ease-out;
 }
 
-.card-3d-inner {
-  background: transparent !important;
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 音乐卡片进入动画 */
+.music-card-wrapper {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 海报容器动画 */
+.music-poster-container {
+  position: relative;
+}
+
+.poster-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 60%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.group:hover .poster-overlay {
+  opacity: 1;
+}
+
+.music-poster {
+  position: relative;
+  z-index: 0;
+}
+
+.poster-placeholder {
+  animation: placeholder-pulse 2s ease-in-out infinite;
+}
+
+@keyframes placeholder-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* 状态标签动画 - 复用影视页面的样式 */
+.status-badge-wrapper {
+  z-index: 2;
+  cursor: pointer;
+}
+
+.status-badge {
+  position: relative;
+  animation: badgeBounce 0.6s ease-out;
+  transform-origin: top right;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes badgeBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  60% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.status-badge-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  filter: blur(8px);
+}
+
+.status-badge-1 .status-badge-glow {
+  background: radial-gradient(circle, rgba(64, 158, 255, 0.4) 0%, transparent 70%);
+}
+
+.status-badge-2 .status-badge-glow {
+  background: radial-gradient(circle, rgba(230, 162, 60, 0.4) 0%, transparent 70%);
+}
+
+.status-badge-3 .status-badge-glow {
+  background: radial-gradient(circle, rgba(103, 194, 58, 0.4) 0%, transparent 70%);
+}
+
+.status-badge-4 .status-badge-glow {
+  background: radial-gradient(circle, rgba(245, 108, 108, 0.4) 0%, transparent 70%);
+}
+
+.status-badge:hover {
+  transform: scale(1.15) translateY(-2px);
+}
+
+.status-badge:hover .status-badge-glow {
+  opacity: 1;
+  animation: badge-glow-pulse 1.5s ease-in-out infinite;
+}
+
+.status-badge:hover .status-tag {
+  transform: scale(1.1);
+  box-shadow: 
+    0 4px 12px rgba(0, 212, 255, 0.4),
+    0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.status-badge:active {
+  transform: scale(1.05) translateY(0);
+}
+
+.status-badge:active .status-tag {
+  animation: badge-click 0.3s ease-out;
+}
+
+@keyframes badge-click {
+  0%, 100% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes badge-glow-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.status-tag {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+  overflow: visible;
+}
+
+.status-text {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.status-badge:hover .status-text {
+  transform: scale(1.05);
+}
+
+.status-badge-ripple {
+  position: absolute;
+  inset: -8px;
+  border-radius: 12px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.status-badge:active .status-badge-ripple {
+  animation: ripple-effect 0.6s ease-out;
+}
+
+@keyframes ripple-effect {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+    box-shadow: 0 0 0 20px rgba(0, 212, 255, 0);
+  }
+}
+
+.group:hover .status-badge {
+  transform: scale(1.1) translateY(-2px);
+}
+
+.group:hover .status-badge .status-badge-glow {
+  opacity: 0.8;
+}
+
+.group:hover .status-tag {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+/* 评分动画 */
+.rating-badge {
+  z-index: 2;
+  animation: ratingSlideUp 0.5s ease-out 0.2s both;
+  transition: all 0.3s ease;
+}
+
+@keyframes ratingSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rating-star {
+  animation: starTwinkle 2s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+.rating-value {
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.group:hover .rating-badge {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+/* 标签容器动画 */
+.music-tags {
+  animation: tagsFadeIn 0.4s ease-out 0.3s both;
+}
+
+@keyframes tagsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.music-tag-item {
+  animation: tagPop 0.3s ease-out both;
+}
+
+.music-tag-item:nth-child(1) { animation-delay: 0.1s; }
+.music-tag-item:nth-child(2) { animation-delay: 0.2s; }
+.music-tag-item:nth-child(3) { animation-delay: 0.3s; }
+.music-tag-item:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes tagPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 操作按钮动画 */
+.music-actions {
+  animation: actionsSlideUp 0.4s ease-out 0.4s both;
+}
+
+@keyframes actionsSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-btn {
+  transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+  transform: translateX(-2px);
+}
+
+.delete-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* 评价卡片动画 */
+.comment-card {
+  animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 分页动画 */
+.pagination-wrapper {
+  animation: paginationFadeIn 0.5s ease-out;
+}
+
+@keyframes paginationFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:deep(.animated-pagination .el-pager li) {
+  transition: all 0.3s ease;
+}
+
+:deep(.animated-pagination .el-pager li:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+:deep(.animated-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #00d4ff, #00ffcc);
+  color: #1a1a2e;
+  font-weight: 600;
 }
 
 .line-clamp-1 {
@@ -662,6 +1089,18 @@ onMounted(() => {
   box-shadow:
     0 18px 45px rgba(0, 0, 0, 0.7),
     0 0 30px rgba(0, 212, 255, 0.25);
+  animation: dialogSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 :deep(.music-dialog .el-dialog__header) {

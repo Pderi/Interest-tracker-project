@@ -10,62 +10,65 @@
     
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-      <div 
-        v-for="(stat, index) in stats" 
+      <AnimatedCard
+        v-for="(stat, index) in stats"
         :key="index"
-        class="stat-card group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 p-6 transition-all duration-500 hover:scale-[1.02] hover:border-[#00d4ff]/30 hover:shadow-xl hover:shadow-[#00d4ff]/10"
+        variant="glass"
+        class="stat-card"
         :style="{ animationDelay: `${index * 100}ms` }"
       >
-        <div class="absolute inset-0 bg-gradient-to-br from-[#00d4ff]/0 to-[#00ffcc]/0 group-hover:from-[#00d4ff]/3 group-hover:to-[#00ffcc]/3 transition-all duration-500"></div>
-          <div class="relative z-10 flex items-center justify-between">
+        <div class="p-6">
+          <div class="flex items-center justify-between">
             <div class="flex-1">
               <p class="text-gray-400 text-xs sm:text-sm mb-2 font-medium">{{ stat.label }}</p>
               <p class="text-3xl sm:text-4xl font-bold gradient-text">
-                {{ stat.value }}
+                <span class="number-counter">{{ stat.value }}</span>
               </p>
               <p class="text-gray-500 text-xs mt-1">{{ stat.desc }}</p>
             </div>
-            <div class="ml-4 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/20 border border-[#00d4ff]/30 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-6 group-hover:border-[#00d4ff]/50 group-hover:bg-gradient-to-br group-hover:from-[#00d4ff]/30 group-hover:to-[#00ffcc]/30">
+            <div class="ml-4 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/20 border border-[#00d4ff]/30 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-6 hover:border-[#00d4ff]/50 hover:bg-gradient-to-br hover:from-[#00d4ff]/30 hover:to-[#00ffcc]/30 icon-container">
               <el-icon :size="24" class="text-[#00d4ff]">
                 <component :is="stat.icon" />
               </el-icon>
             </div>
           </div>
-      </div>
+        </div>
+      </AnimatedCard>
     </div>
 
     <!-- Recent Activity -->
-    <div class="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 overflow-hidden">
+    <AnimatedCard variant="glass" class="overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-white/10">
         <div class="flex items-center justify-between">
           <h2 class="text-lg sm:text-xl font-semibold text-white">最近活动</h2>
-          <el-button text type="primary" size="small" class="!text-[#00d4ff] hover:!text-[#00ffcc] glow-effect">
+          <AnimatedButton variant="outline" size="small" @click="handleViewAll">
             查看全部
             <el-icon class="ml-1"><ArrowRight /></el-icon>
-          </el-button>
+          </AnimatedButton>
         </div>
       </div>
       <div class="divide-y divide-white/10">
         <div
-          v-for="activity in recentActivities"
+          v-for="(activity, index) in recentActivities"
           :key="activity.id"
-          class="p-4 sm:p-6 hover:bg-white/5 transition-colors cursor-pointer group"
+          class="activity-item p-4 sm:p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group"
+          :style="{ animationDelay: `${index * 50}ms` }"
         >
           <div class="flex items-start">
-            <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/20 border border-[#00d4ff]/30 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+            <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/20 border border-[#00d4ff]/30 flex items-center justify-center mr-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 activity-icon">
               <el-icon :size="20" :class="activity.color">
                 <component :is="activity.icon" />
               </el-icon>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="text-white font-semibold text-sm sm:text-base mb-1">{{ activity.title }}</h3>
+              <h3 class="text-white font-semibold text-sm sm:text-base mb-1 transition-colors group-hover:text-[#00d4ff]">{{ activity.title }}</h3>
               <p class="text-gray-400 text-xs sm:text-sm mb-1">{{ activity.desc }}</p>
               <p class="text-gray-500 text-xs">{{ activity.time }}</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AnimatedCard>
   </div>
 </template>
 
@@ -82,6 +85,7 @@ import {
   ArrowRight,
 } from '@element-plus/icons-vue'
 import { getMoviePage } from '@/api/movie'
+import { AnimatedCard, AnimatedButton } from '@/components/uiverse'
 
 const stats = ref([
   {
@@ -150,6 +154,11 @@ async function loadMovieStats() {
   } catch {
     // ignore, 保持占位数据
   }
+}
+
+function handleViewAll() {
+  // 可以导航到时间线页面或其他页面
+  console.log('查看全部活动')
 }
 
 onMounted(() => {
@@ -253,6 +262,97 @@ const recentActivities = ref([
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* 数字计数动画 */
+.number-counter {
+  display: inline-block;
+  animation: countUp 0.8s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 图标容器动画 */
+.icon-container {
+  position: relative;
+}
+
+.icon-container::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.icon-container:hover::before {
+  opacity: 1;
+}
+
+/* 活动项动画 */
+.activity-item {
+  animation: slideInLeft 0.5s ease-out both;
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #00d4ff, #00ffcc);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.3s ease;
+}
+
+.activity-item:hover::before {
+  transform: scaleY(1);
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 活动图标动画 */
+.activity-icon {
+  position: relative;
+}
+
+.activity-icon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(0, 255, 204, 0.3));
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+
+.activity-item:hover .activity-icon::after {
+  opacity: 1;
 }
 </style>
 

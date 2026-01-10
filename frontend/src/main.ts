@@ -9,6 +9,10 @@ import App from './App.vue'
 import router from './router'
 import './styles/main.css'
 import './styles/theme.css'
+import { injectThemeVariables } from './utils/uiverse-theme'
+
+// 注入 Uiverse.io 主题变量
+injectThemeVariables()
 
 const app = createApp(App)
 

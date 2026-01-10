@@ -2,38 +2,35 @@
   <div class="photo-page">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold neon-text mb-4 sm:mb-0 float-animation">摄影</h1>
-      <el-button 
-        type="primary" 
-        :icon="Plus" 
-        @click="handleUpload"
-        class="!bg-[#00d4ff] !border-[#00d4ff] hover:!bg-[#00ffcc] hover:!border-[#00ffcc] !text-[#1a1a2e] shadow-lg shadow-[#00d4ff]/30 hover:shadow-[#00d4ff]/50 transition-all glow-effect font-semibold"
-      >
+      <AnimatedButton variant="primary" @click="handleUpload">
+        <el-icon><Plus /></el-icon>
         上传照片
-      </el-button>
+      </AnimatedButton>
     </div>
 
     <!-- 筛选栏 -->
     <div class="mb-6 flex flex-wrap gap-3">
-      <el-button 
-        v-for="tag in tagOptions" 
+      <AnimatedButton
+        v-for="tag in tagOptions"
         :key="tag.value"
-        :type="filterTag === tag.value ? 'primary' : 'default'"
+        :variant="filterTag === tag.value ? 'primary' : 'secondary'"
         size="small"
         @click="filterTag = tag.value"
-        :class="filterTag === tag.value ? '!bg-[#ff6b6b] !border-[#ff6b6b]' : ''"
       >
         {{ tag.label }}
-      </el-button>
+      </AnimatedButton>
     </div>
 
     <!-- 照片网格 -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-      <div
-        v-for="photo in filteredPhotos"
+      <AnimatedCard
+        v-for="(photo, index) in filteredPhotos"
         :key="photo.id"
-        class="card-3d group"
+        variant="3d"
+        class="photo-card-wrapper group"
+        :style="{ animationDelay: `${index * 50}ms` }"
       >
-        <div class="card-3d-inner rounded-2xl overflow-hidden glass-effect border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect">
+        <div class="rounded-2xl overflow-hidden">
           <!-- 照片 -->
           <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-[#c3cfe2]/20 to-[#f5f7fa]/10">
             <img 
@@ -52,16 +49,16 @@
             </div>
             
             <!-- 标签 -->
-            <div class="absolute top-3 left-3 right-3 flex flex-wrap gap-2">
-              <el-tag
+            <div class="absolute top-3 left-3 right-3 flex flex-wrap gap-2 photo-tags">
+              <AnimatedTag
                 v-for="tag in photo.tags.slice(0, 2)"
                 :key="tag"
+                variant="glow"
                 size="small"
-                effect="dark"
-                class="backdrop-blur-md"
+                class="photo-tag-item"
               >
                 {{ tag }}
-              </el-tag>
+              </AnimatedTag>
             </div>
 
             <!-- 拍摄时间 -->
@@ -90,7 +87,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </AnimatedCard>
     </div>
   </div>
 </template>
@@ -98,6 +95,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Plus, Picture, Camera, Location } from '@element-plus/icons-vue'
+import { 
+  AnimatedButton, 
+  AnimatedCard,
+  AnimatedTag
+} from '@/components/uiverse'
 
 // 假数据
 const photos = ref([
@@ -231,6 +233,66 @@ function handleImageLoad(photoId: number) {
 <style scoped>
 .photo-page {
   min-height: 100%;
+  animation: pageFadeIn 0.4s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 照片卡片进入动画 */
+.photo-card-wrapper {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 标签动画 */
+.photo-tags {
+  animation: tagsFadeIn 0.4s ease-out 0.2s both;
+}
+
+@keyframes tagsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.photo-tag-item {
+  animation: tagPop 0.3s ease-out both;
+}
+
+.photo-tag-item:nth-child(1) { animation-delay: 0.1s; }
+.photo-tag-item:nth-child(2) { animation-delay: 0.2s; }
+
+@keyframes tagPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .line-clamp-1 {

@@ -16,13 +16,14 @@
       <!-- Right Actions -->
       <div class="flex items-center space-x-2 sm:space-x-4">
         <!-- Theme Toggle -->
-        <el-button
-          :icon="themeStore.theme === 'dark' ? Sunny : Moon"
-          circle
-          size="small"
+        <button
           @click="themeStore.toggleTheme()"
-          class="!border-[#00d4ff]/30 !bg-[#00d4ff]/10 hover:!bg-[#00d4ff]/20 hover:!border-[#00d4ff]/50 transition-all glow-effect"
-        />
+          class="w-10 h-10 rounded-full border border-[#00d4ff]/30 bg-[#00d4ff]/10 hover:bg-[#00d4ff]/20 hover:border-[#00d4ff]/50 transition-all glow-effect flex items-center justify-center"
+        >
+          <el-icon :size="18" class="text-[#00d4ff]">
+            <component :is="themeStore.theme === 'dark' ? Sunny : Moon" />
+          </el-icon>
+        </button>
 
         <!-- User Menu -->
         <el-dropdown @command="handleCommand" trigger="click">

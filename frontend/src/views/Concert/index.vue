@@ -2,83 +2,88 @@
   <div class="concert-page">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold neon-text mb-4 sm:mb-0 float-animation">演唱会</h1>
-      <el-button
-        type="primary"
-        :icon="Plus"
-        @click="openCreateDialog"
-        class="!bg-[#00d4ff] !border-[#00d4ff] hover:!bg-[#00ffcc] hover:!border-[#00ffcc] !text-[#1a1a2e] shadow-lg shadow-[#00d4ff]/30 hover:shadow-[#00d4ff]/50 transition-all glow-effect font-semibold"
-      >
+      <AnimatedButton variant="primary" @click="openCreateDialog">
+        <el-icon><Plus /></el-icon>
         添加记录
-      </el-button>
+      </AnimatedButton>
     </div>
 
     <!-- 筛选栏 -->
     <div class="mb-6">
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 w-full">
-          <el-button
+          <AnimatedButton
             v-for="tag in tagOptions"
             :key="tag.value"
-            :type="filterTag === tag.value ? 'primary' : 'default'"
+            :variant="filterTag === tag.value ? 'primary' : 'secondary'"
+            size="small"
             @click="changeTag(tag.value)"
-            :class="filterTag === tag.value ? '!bg-[#00d4ff] !border-[#00d4ff]' : ''"
           >
             {{ tag.label }}
-          </el-button>
+          </AnimatedButton>
         </div>
-        <el-input
+        <AnimatedSearch
           v-model="keyword"
           placeholder="搜索艺人、地点…"
-          clearable
-          class="w-full"
-          @keyup.enter="handleSearch"
+          @enter="handleSearch"
           @clear="handleSearch"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
+        />
       </div>
     </div>
 
     <!-- 演唱会卡片网格 -->
-    <div
-      v-loading="loading"
-      class="min-h-[120px]"
-    >
-      <div
-        v-if="concertList.length === 0 && !loading"
-        class="py-10 text-center text-gray-400"
-      >
-        暂无记录，点击右上角「添加记录」开始你的演唱会之旅。
+    <div class="min-h-[120px] relative">
+      <!-- 骨架屏加载 -->
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <SkeletonCard v-for="i in pageSize" :key="`skeleton-${i}`" />
       </div>
+      
+      <EmptyState
+        v-else-if="concertList.length === 0"
+        title="暂无记录"
+        description="点击右上角「添加记录」开始你的演唱会之旅"
+      >
+        <template #icon>
+          <el-icon :size="64" class="text-gray-500">
+            <Headset />
+          </el-icon>
+        </template>
+        <template #action>
+          <AnimatedButton variant="primary" @click="openCreateDialog">
+            <el-icon><Plus /></el-icon>
+            添加第一条记录
+          </AnimatedButton>
+        </template>
+      </EmptyState>
 
       <div
         v-else
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
       >
         <template
-          v-for="concert in concertList"
+          v-for="(concert, index) in concertList"
           :key="concert.id"
         >
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-2 concert-card-wrapper" :style="{ animationDelay: `${index * 50}ms` }">
             <!-- 演唱会卡片 -->
-            <div
-              class="card-3d group cursor-pointer"
-              @click="goDetail()"
+            <AnimatedCard
+              variant="3d"
+              class="group cursor-pointer"
+              @click="(e) => handleCardClick(e, concert)"
             >
-              <div class="card-3d-inner rounded-2xl overflow-hidden border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 glow-effect bg-transparent">
+              <div class="rounded-2xl overflow-hidden">
                 <!-- 图片 -->
-                <div class="relative aspect-[4/3] overflow-hidden">
+                <div class="relative aspect-[4/3] overflow-hidden concert-poster-container">
+                  <div class="poster-overlay"></div>
                   <img
                     v-if="concert.imageUrl && !imageErrorMap[concert.id]"
                     :src="concert.imageUrl"
                     :alt="concert.artist"
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    class="concert-poster w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
                     @error="handleImageError(concert.id)"
                   />
-                  <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10">
+                  <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10 poster-placeholder">
                     <el-icon :size="48" class="text-[#c3cfe2]/40">
                       <Headset />
                     </el-icon>
@@ -87,10 +92,10 @@
                   <!-- 评分 -->
                   <div
                     v-if="concert.rating != null"
-                    class="absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
+                    class="rating-badge absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
                   >
-                    <el-icon class="text-yellow-400"><StarFilled /></el-icon>
-                    <span class="text-white text-sm font-semibold">{{ concert.rating }}</span>
+                    <el-icon class="text-yellow-400 rating-star"><StarFilled /></el-icon>
+                    <span class="text-white text-sm font-semibold rating-value">{{ concert.rating }}</span>
                   </div>
                 </div>
 
@@ -106,28 +111,28 @@
                   <!-- 标签 -->
                   <div
                     v-if="concert.tags"
-                    class="flex flex-wrap gap-2 mt-1"
+                    class="flex flex-wrap gap-2 mt-1 concert-tags"
                   >
-                    <el-tag
-                      v-for="tag in concert.tags.split(',')"
+                    <AnimatedTag
+                      v-for="(tag, tagIndex) in concert.tags.split(',')"
                       :key="tag"
-                      size="small"
-                      effect="plain"
-                      class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
+                      variant="glow"
+                      :animated="tagIndex % 2 === 0"
+                      class="concert-tag-item"
                     >
                       {{ tag }}
-                    </el-tag>
+                    </AnimatedTag>
                   </div>
 
-                  <div class="mt-2 flex justify-between items-center">
-                    <el-button
-                      text
+                  <div class="mt-2 flex justify-between items-center concert-actions">
+                    <AnimatedButton
+                      variant="outline"
                       size="small"
-                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
                       @click.stop="openEditDialog()"
+                      class="action-btn edit-btn"
                     >
                       编辑
-                    </el-button>
+                    </AnimatedButton>
                     <el-popconfirm
                       title="确定删除该记录？"
                       confirm-button-text="删除"
@@ -136,26 +141,26 @@
                       @confirm="handleDelete(concert.id)"
                     >
                       <template #reference>
-                        <el-button
-                          text
-                          size="small"
-                          class="!text-red-400 hover:!text-red-300"
+                        <button
+                          @click.stop
+                          class="action-btn delete-btn"
                         >
                           删除
-                        </el-button>
+                        </button>
                       </template>
                     </el-popconfirm>
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimatedCard>
 
             <!-- 照片展示区域 -->
-            <div
+            <AnimatedCard
               v-if="concert.photos && concert.photos.length > 0"
-              class="card-3d"
+              variant="glass"
+              class="photo-gallery-card"
             >
-              <div class="card-3d-inner rounded-2xl glass-effect p-4 transition-all">
+              <div class="p-4">
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center gap-2">
                     <el-icon class="text-[#00d4ff]/60">
@@ -205,14 +210,15 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimatedCard>
 
             <!-- 评价卡片 -->
-            <div
+            <AnimatedCard
               v-if="concert.comment"
-              class="card-3d"
+              variant="glass"
+              class="comment-card"
             >
-              <div class="card-3d-inner rounded-2xl glass-effect p-4 transition-all">
+              <div class="p-4">
                 <div class="flex items-start gap-3">
                   <el-icon class="text-[#00d4ff]/60 mt-0.5 flex-shrink-0">
                     <ChatLineRound />
@@ -224,7 +230,7 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimatedCard>
           </div>
         </template>
       </div>
@@ -232,7 +238,7 @@
       <!-- 分页 -->
       <div
         v-if="total > 0"
-        class="mt-6 flex justify-end"
+        class="mt-6 flex justify-end pagination-wrapper"
       >
         <el-pagination
           v-model:current-page="pageNo"
@@ -242,6 +248,7 @@
           :page-sizes="[8, 16, 32]"
           @current-change="loadConcerts"
           @size-change="loadConcerts"
+          class="animated-pagination"
         />
       </div>
     </div>
@@ -395,10 +402,19 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete } from '@element-plus/icons-vue'
 import { uploadPhoto, getPhotoList, deletePhoto, linkPhotoToConcert } from '@/api/photo'
 import type { Photo } from '@/api/photo'
+import AnimatedButton from '@/components/uiverse/AnimatedButton.vue'
+import AnimatedCard from '@/components/uiverse/AnimatedCard.vue'
+import EmptyState from '@/components/uiverse/EmptyState.vue'
+import SkeletonCard from '@/components/uiverse/SkeletonCard.vue'
+import AnimatedSearch from '@/components/uiverse/AnimatedSearch.vue'
+import AnimatedTag from '@/components/uiverse/AnimatedTag.vue'
+
+const router = useRouter()
 
 const loading = ref(false)
 const concertList = ref<any[]>([])
@@ -605,9 +621,22 @@ function handleImageError(id: number) {
   imageErrorMap[id] = true
 }
 
-function goDetail() {
-  // 暂时不实现详情页
-  ElMessage.info('详情页开发中...')
+function goDetail(concertId?: number) {
+  if (!concertId) {
+    // 暂时不实现详情页
+    ElMessage.info('详情页开发中...')
+    return
+  }
+  router.push(`/concert/${concertId}`)
+}
+
+function handleCardClick(event: MouseEvent, concert: any) {
+  // 如果点击的是按钮或链接，不触发卡片点击
+  const target = event.target as HTMLElement
+  if (target.closest('button') || target.closest('a') || target.closest('.action-btn') || target.closest('.el-popconfirm')) {
+    return
+  }
+  goDetail(concert.id)
 }
 
 function openCreateDialog() {
@@ -766,6 +795,249 @@ onMounted(() => {
 .concert-page {
   padding: 20px;
   min-height: 100%;
+  animation: pageFadeIn 0.4s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 演唱会卡片进入动画 */
+.concert-card-wrapper {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 标签动画 */
+.concert-tags {
+  animation: tagsFadeIn 0.4s ease-out 0.3s both;
+}
+
+@keyframes tagsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.concert-tag-item {
+  animation: tagPop 0.3s ease-out both;
+}
+
+.concert-tag-item:nth-child(1) { animation-delay: 0.1s; }
+.concert-tag-item:nth-child(2) { animation-delay: 0.2s; }
+.concert-tag-item:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes tagPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 操作按钮动画 */
+.concert-actions {
+  animation: actionsSlideUp 0.4s ease-out 0.4s both;
+}
+
+@keyframes actionsSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-btn {
+  transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+  transform: translateX(-2px);
+}
+
+.delete-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* 海报容器动画 */
+.concert-poster-container {
+  position: relative;
+}
+
+.poster-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 60%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.group:hover .poster-overlay {
+  opacity: 1;
+}
+
+.concert-poster {
+  position: relative;
+  z-index: 0;
+}
+
+.poster-placeholder {
+  animation: placeholder-pulse 2s ease-in-out infinite;
+}
+
+@keyframes placeholder-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* 评分动画 */
+.rating-badge {
+  z-index: 2;
+  animation: ratingSlideUp 0.5s ease-out 0.2s both;
+  transition: all 0.3s ease;
+}
+
+@keyframes ratingSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rating-star {
+  animation: starTwinkle 2s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+.rating-value {
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.group:hover .rating-badge {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+/* 照片画廊卡片动画 */
+.photo-gallery-card {
+  animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 评价卡片动画 */
+.comment-card {
+  animation: slideInRight 0.4s ease-out;
+}
+
+/* 分页动画 */
+.pagination-wrapper {
+  animation: paginationFadeIn 0.5s ease-out;
+}
+
+@keyframes paginationFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:deep(.animated-pagination .el-pager li) {
+  transition: all 0.3s ease;
+}
+
+:deep(.animated-pagination .el-pager li:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+:deep(.animated-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #00d4ff, #00ffcc);
+  color: #1a1a2e;
+  font-weight: 600;
 }
 
 .neon-text {

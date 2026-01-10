@@ -19,8 +19,11 @@
           <div class="absolute left-6 sm:left-10 top-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#00ffcc] border-2 border-[#1a1a2e] pulse-animation shadow-lg shadow-[#00d4ff]/50 rotate-glow"></div>
 
           <!-- 卡片 -->
-          <div class="card-3d group">
-            <div class="card-3d-inner rounded-2xl glass-effect border border-white/10 hover:border-[#00d4ff]/30 transition-all duration-500 overflow-hidden glow-effect">
+          <AnimatedCard
+            variant="glass"
+            class="timeline-card group"
+          >
+            <div class="rounded-2xl overflow-hidden">
               <div class="p-4 sm:p-6">
                 <!-- 头部 -->
                 <div class="flex items-start justify-between mb-4">
@@ -46,16 +49,16 @@
                 </div>
 
                 <!-- 标签 -->
-                <div v-if="item.tags && item.tags.length" class="flex flex-wrap gap-2">
-                  <el-tag
-                    v-for="tag in item.tags"
+                <div v-if="item.tags && item.tags.length" class="flex flex-wrap gap-2 timeline-tags">
+                  <AnimatedTag
+                    v-for="(tag, tagIndex) in item.tags"
                     :key="tag"
-                    size="small"
-                    effect="plain"
-                    class="!border-[#00d4ff]/30 !text-[#00d4ff] flicker"
+                    variant="glow"
+                    :animated="tagIndex % 2 === 0"
+                    class="timeline-tag-item"
                   >
                     {{ tag }}
-                  </el-tag>
+                  </AnimatedTag>
                 </div>
 
                 <!-- 图片预览 -->
@@ -68,21 +71,20 @@
                 </div>
               </div>
             </div>
-          </div>
+          </AnimatedCard>
         </div>
       </div>
     </div>
 
     <!-- 加载更多 -->
     <div class="text-center mt-8">
-      <el-button 
-        type="primary"
+      <AnimatedButton
+        variant="primary"
         :loading="loading"
         @click="loadMore"
-        class="!bg-[#00d4ff] !border-[#00d4ff] hover:!bg-[#00ffcc] hover:!border-[#00ffcc] !text-[#1a1a2e] shadow-lg shadow-[#00d4ff]/30 hover:shadow-[#00d4ff]/50 glow-effect font-semibold"
       >
         {{ loading ? '加载中...' : '加载更多' }}
-      </el-button>
+      </AnimatedButton>
     </div>
   </div>
 </template>
@@ -91,6 +93,11 @@
 import { ref } from 'vue'
 import { Camera, VideoPlay, Headset, Trophy, Document, Location, Clock } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
+import { 
+  AnimatedButton, 
+  AnimatedCard,
+  AnimatedTag
+} from '@/components/uiverse'
 
 // 假数据
 const timelineItems = ref([
@@ -229,6 +236,16 @@ function loadMore() {
 <style scoped>
 .timeline-page {
   min-height: 100%;
+  animation: pageFadeIn 0.4s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .timeline-item {
@@ -243,6 +260,52 @@ function loadMore() {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* 时间线卡片动画 */
+.timeline-card {
+  transition: all 0.3s ease;
+}
+
+.timeline-card:hover {
+  transform: translateX(8px);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+}
+
+/* 标签动画 */
+.timeline-tags {
+  animation: tagsFadeIn 0.4s ease-out 0.3s both;
+}
+
+@keyframes tagsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.timeline-tag-item {
+  animation: tagPop 0.3s ease-out both;
+}
+
+.timeline-tag-item:nth-child(1) { animation-delay: 0.1s; }
+.timeline-tag-item:nth-child(2) { animation-delay: 0.2s; }
+.timeline-tag-item:nth-child(3) { animation-delay: 0.3s; }
+.timeline-tag-item:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes tagPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 </style>
