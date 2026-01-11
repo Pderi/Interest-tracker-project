@@ -55,3 +55,9 @@ yarn-error.log*
 *.db
 *.sqlite
 
+# 敏感配置文件（包含密钥、密码等）
+backend/interest-tracker-server/src/main/resources/application-cos.yml
+backend/interest-tracker-server/src/main/resources/application-secret.yml
+**/application-*-secret.yml
+**/application-*-cos.yml
+

@@ -24,6 +24,10 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  config:
+    import:
+          - optional:file:./application-cos.yml  # 可选的外部配置文件，如果不存在不会报错
+          - optional:file:./application-secret.yml  # 其他敏感配置（如果有）
 
 # MyBatis Plus 配置
 mybatis-plus:
@@ -70,9 +74,31 @@ domestic:
     base-url: https://api.wmdb.tv  # WMDB 默认地址
     api-key: ""     # 当前 WMDB 不需要 key，留空
 
+# Spring Profiles 配置
+# 引入外部配置文件（敏感信息配置）
 
-
-
+# 腾讯云COS配置（敏感信息已移至 application-cos.yml）
+# 如果 application-cos.yml 不存在，可以使用以下默认配置或环境变量
+tencent:
+  cos:
+    # 地域（Region），例如：ap-beijing、ap-shanghai、ap-guangzhou
+    region: ${TENCENT_COS_REGION:}
+    # 访问密钥ID（SecretId）- 优先从环境变量读取
+    secret-id: ${TENCENT_COS_SECRET_ID:}
+    # 访问密钥Key（SecretKey）- 优先从环境变量读取
+    secret-key: ${TENCENT_COS_SECRET_KEY:}
+    # 存储桶名称（Bucket Name）
+    bucket-name: ${TENCENT_COS_BUCKET_NAME:}
+    # 访问域名（Domain），用于生成文件访问URL
+    domain: ${TENCENT_COS_DOMAIN:}
+    # 文件路径前缀（可选，默认为 photos/）
+    path-prefix: photos/
+    # 缩略图路径前缀（可选，默认为 thumbnails/）
+    thumbnail-prefix: thumbnails/
+    # 连接超时时间（毫秒，可选，默认30000）
+    connection-timeout: 30000
+    # Socket超时时间（毫秒，可选，默认30000）
+    socket-timeout: 30000
 
 # 日志配置
 logging:

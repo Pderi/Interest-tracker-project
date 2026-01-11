@@ -10,6 +10,7 @@ USE `interest_tracker`;
 -- ========================================
 -- 用户表
 -- ========================================
+DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE IF NOT EXISTS `sys_user` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户ID',
     `username` VARCHAR(64) NOT NULL COMMENT '用户名',
@@ -33,17 +34,24 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
 -- ========================================
 
 -- 照片表
+DROP TABLE IF EXISTS `photo`;
 CREATE TABLE IF NOT EXISTS `photo` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '照片ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
     `title` VARCHAR(255) DEFAULT NULL COMMENT '照片标题',
     `description` TEXT DEFAULT NULL COMMENT '照片描述',
-    `file_path` VARCHAR(512) NOT NULL COMMENT '文件路径',
-    `thumbnail_path` VARCHAR(512) DEFAULT NULL COMMENT '缩略图路径',
+    `file_path` VARCHAR(512) NOT NULL COMMENT '文件路径（COS URL）',
+    `thumbnail_path` VARCHAR(512) DEFAULT NULL COMMENT '缩略图路径（COS URL）',
+    `file_size` BIGINT DEFAULT NULL COMMENT '文件大小（字节）',
+    `width` INT DEFAULT NULL COMMENT '图片宽度（像素）',
+    `height` INT DEFAULT NULL COMMENT '图片高度（像素）',
+    `mime_type` VARCHAR(64) DEFAULT NULL COMMENT 'MIME类型',
+    `storage_type` TINYINT DEFAULT 1 COMMENT '存储类型：1-COS 2-本地',
     `exif_data` JSON DEFAULT NULL COMMENT 'EXIF数据（JSON格式）',
     `location` VARCHAR(255) DEFAULT NULL COMMENT '拍摄地点',
     `tags` VARCHAR(512) DEFAULT NULL COMMENT '标签（逗号分隔）',
-    `category` VARCHAR(64) DEFAULT NULL COMMENT '分类',
+    `category` VARCHAR(64) DEFAULT NULL COMMENT '分类（冗余字段，便于查询）',
+    `category_id` BIGINT DEFAULT NULL COMMENT '分类ID（关联photo_category表）',
     `shoot_time` DATETIME DEFAULT NULL COMMENT '拍摄时间',
     `travel_record_id` BIGINT DEFAULT NULL COMMENT '关联的旅游记录ID',
     `concert_record_id` BIGINT DEFAULT NULL COMMENT '关联的观演记录ID',
@@ -57,11 +65,36 @@ CREATE TABLE IF NOT EXISTS `photo` (
     KEY `idx_user_id` (`user_id`),
     KEY `idx_shoot_time` (`shoot_time`),
     KEY `idx_create_time` (`create_time`),
+    KEY `idx_category_id` (`category_id`),
+    KEY `idx_category` (`category`),
     KEY `idx_travel_record_id` (`travel_record_id`),
-    KEY `idx_concert_record_id` (`concert_record_id`)
+    KEY `idx_concert_record_id` (`concert_record_id`),
+    KEY `idx_user_shoot_time` (`user_id`, `shoot_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='照片表';
 
+-- 照片分类表（用户自定义分类）
+DROP TABLE IF EXISTS `photo_category`;
+CREATE TABLE IF NOT EXISTS `photo_category` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '分类ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `name` VARCHAR(64) NOT NULL COMMENT '分类名称',
+    `color` VARCHAR(16) DEFAULT NULL COMMENT '分类颜色（十六进制，如：#FF5733）',
+    `icon` VARCHAR(64) DEFAULT NULL COMMENT '分类图标（可选，如：camera、nature等）',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '分类描述',
+    `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序顺序（数字越小越靠前）',
+    `photo_count` INT NOT NULL DEFAULT 0 COMMENT '该分类下的照片数量（冗余字段，便于统计）',
+    `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+    UNIQUE KEY `uk_user_name` (`user_id`, `name`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_sort_order` (`user_id`, `sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='照片分类表';
+
 -- 相册表
+DROP TABLE IF EXISTS `photo_album`;
 CREATE TABLE IF NOT EXISTS `photo_album` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '相册ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -78,6 +111,7 @@ CREATE TABLE IF NOT EXISTS `photo_album` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='相册表';
 
 -- 相册照片关联表
+DROP TABLE IF EXISTS `photo_album_photo`;
 CREATE TABLE IF NOT EXISTS `photo_album_photo` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关联ID',
     `album_id` BIGINT NOT NULL COMMENT '相册ID',
@@ -118,6 +152,7 @@ CREATE TABLE IF NOT EXISTS `movie` (
     KEY `idx_tmdb_id` (`tmdb_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='影视表';
 -- 观看记录表
+DROP TABLE IF EXISTS `movie_record`;
 CREATE TABLE IF NOT EXISTS `movie_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -146,6 +181,7 @@ CREATE TABLE IF NOT EXISTS `movie_record` (
 -- ========================================
 
 -- 专辑表
+DROP TABLE IF EXISTS `album`;
 CREATE TABLE IF NOT EXISTS `album` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '专辑ID',
     `title` VARCHAR(255) NOT NULL COMMENT '专辑名称',
@@ -167,6 +203,7 @@ CREATE TABLE IF NOT EXISTS `album` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='专辑表';
 
 -- 听歌记录表
+DROP TABLE IF EXISTS `album_record`;
 CREATE TABLE IF NOT EXISTS `album_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -196,6 +233,7 @@ CREATE TABLE IF NOT EXISTS `album_record` (
 -- ========================================
 
 -- 比赛记录表
+DROP TABLE IF EXISTS `match_record`;
 CREATE TABLE IF NOT EXISTS `match_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -224,6 +262,7 @@ CREATE TABLE IF NOT EXISTS `match_record` (
 -- ========================================
 
 -- 书籍表
+DROP TABLE IF EXISTS `book`;
 CREATE TABLE IF NOT EXISTS `book` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '书籍ID',
     `douban_id` VARCHAR(64) DEFAULT NULL COMMENT '豆瓣ID（用于关联豆瓣数据）',
@@ -249,6 +288,7 @@ CREATE TABLE IF NOT EXISTS `book` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='书籍表';
 
 -- 阅读记录表
+DROP TABLE IF EXISTS `book_record`;
 CREATE TABLE IF NOT EXISTS `book_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -276,6 +316,7 @@ CREATE TABLE IF NOT EXISTS `book_record` (
 -- ========================================
 
 -- 旅游地点表
+DROP TABLE IF EXISTS `travel_place`;
 CREATE TABLE IF NOT EXISTS `travel_place` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '地点ID',
     `name` VARCHAR(255) NOT NULL COMMENT '地点名称',
@@ -299,6 +340,7 @@ CREATE TABLE IF NOT EXISTS `travel_place` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='旅游地点表';
 
 -- 旅游记录表
+DROP TABLE IF EXISTS `travel_record`;
 CREATE TABLE IF NOT EXISTS `travel_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -327,6 +369,7 @@ CREATE TABLE IF NOT EXISTS `travel_record` (
 -- ========================================
 
 -- 演唱会表
+DROP TABLE IF EXISTS `concert`;
 CREATE TABLE IF NOT EXISTS `concert` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '演唱会ID',
     `artist` VARCHAR(255) NOT NULL COMMENT '艺术家/乐队',
@@ -351,6 +394,7 @@ CREATE TABLE IF NOT EXISTS `concert` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='演唱会表';
 
 -- 观演记录表
+DROP TABLE IF EXISTS `concert_record`;
 CREATE TABLE IF NOT EXISTS `concert_record` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
@@ -379,6 +423,7 @@ CREATE TABLE IF NOT EXISTS `concert_record` (
 -- ========================================
 
 -- 标签表
+DROP TABLE IF EXISTS `tag`;
 CREATE TABLE IF NOT EXISTS `tag` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '标签ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',

@@ -1,0 +1,25 @@
+# 腾讯云COS配置示例文件
+# 复制此文件为 application-cos.yml 并填写实际配置信息
+# application-cos.yml 已添加到 .gitignore，不会被提交到代码仓库
+
+tencent:
+  cos:
+    # 地域（Region），例如：ap-beijing、ap-shanghai、ap-guangzhou
+    region: 
+    # 访问密钥ID（SecretId）
+    secret-id: 
+    # 访问密钥Key（SecretKey）
+    secret-key: 
+    # 存储桶名称（Bucket Name）
+    bucket-name: 
+    # 访问域名（Domain），用于生成文件访问URL
+    domain: 
+    # 文件路径前缀（可选，默认为 photos/）
+    path-prefix: photos/
+    # 缩略图路径前缀（可选，默认为 thumbnails/）
+    thumbnail-prefix: thumbnails/
+    # 连接超时时间（毫秒，可选，默认30000）
+    connection-timeout: 30000
+    # Socket超时时间（毫秒，可选，默认30000）
+    socket-timeout: 30000
+
