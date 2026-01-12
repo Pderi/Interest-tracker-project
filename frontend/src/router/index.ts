@@ -112,6 +112,15 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'concert/:id',
+        name: 'ConcertDetail',
+        component: () => import('@/views/Concert/Detail.vue'),
+        meta: {
+          title: '演唱会详情',
+          requiresAuth: true,
+        },
+      },
+      {
         path: 'match',
         name: 'Match',
         component: () => import('@/views/Match/index.vue'),

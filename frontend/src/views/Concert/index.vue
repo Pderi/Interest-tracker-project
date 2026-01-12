@@ -142,24 +142,51 @@
                       >
                         <el-icon><Picture /></el-icon>
                         照片
-                      </AnimatedButton>
-                      <el-popconfirm
-                        title="确定删除该记录？"
-                        confirm-button-text="删除"
-                        cancel-button-text="取消"
-                        confirm-button-type="danger"
-                        @confirm="handleDelete(concert.recordId)"
-                      >
-                        <template #reference>
-                          <button
-                            @click.stop
-                            class="action-btn delete-btn"
-                          >
-                            删除
-                          </button>
-                        </template>
-                      </el-popconfirm>
+                    </AnimatedButton>
+                    <el-popconfirm
+                      title="确定删除该记录？"
+                      confirm-button-text="删除"
+                      cancel-button-text="取消"
+                      confirm-button-type="danger"
+                      @confirm="handleDelete(concert.recordId)"
+                    >
+                      <template #reference>
+                        <button
+                          @click.stop
+                          class="action-btn delete-btn"
+                        >
+                          删除
+                        </button>
+                      </template>
+                    </el-popconfirm>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </AnimatedCard>
+
+            <!-- 照片卡片 -->
+            <AnimatedCard
+              v-if="photoMap[concert.recordId] && photoMap[concert.recordId].length"
+              variant="glass"
+              class="photo-gallery-card"
+            >
+              <div class="p-3 space-y-2">
+                <div class="flex items-center justify-between text-sm text-white/80">
+                  <span>照片</span>
+                  <span class="text-xs text-gray-400">{{ photoMap[concert.recordId].length }} 张</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                  <div
+                    v-for="photo in photoMap[concert.recordId].slice(0, 4)"
+                    :key="photo.id"
+                    class="relative aspect-square rounded-lg overflow-hidden border border-white/10"
+                  >
+                    <img
+                      :src="photo.thumbnailPath || photo.filePath"
+                      :alt="photo.title || concert.artist"
+                      class="w-full h-full object-contain bg-black/20"
+                    />
                   </div>
                 </div>
               </div>
@@ -315,7 +342,7 @@
                 >
                   <el-icon><Delete /></el-icon>
                 </el-button>
-              </div>
+  </div>
             </div>
           </el-form-item>
 
@@ -410,19 +437,31 @@
     <!-- 照片上传对话框 -->
     <el-dialog
       v-model="photoUploadDialogVisible"
-      title="上传照片"
-      width="600px"
+      :title="`上传照片 - 观演记录 #${currentConcertId ?? '-'}`"
+      width="700px"
       :close-on-click-modal="false"
     >
       <div class="space-y-4">
+        <div class="text-xs text-gray-400 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+          <div class="font-semibold text-blue-400 mb-1">说明</div>
+          <div>• 仅会绑定到当前演唱会记录，摄影模块不会显示这些照片</div>
+          <div>• 支持 JPG/PNG/GIF/WEBP 格式，单张 ≤ 10MB</div>
+          <div>• 选择文件后将自动上传，上传成功后立即显示</div>
+        </div>
+        
         <el-upload
-          v-model:file-list="uploadFileList"
-          :auto-upload="false"
+          :auto-upload="true"
+          :on-success="handlePhotoUploadSuccess"
+          :on-error="handlePhotoUploadError"
+          :before-upload="beforePhotoUpload"
+          :show-file-list="false"
           :multiple="true"
           :limit="10"
           :on-exceed="() => ElMessage.warning('最多只能上传10张照片')"
+          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+          :http-request="handlePhotoUpload"
+          :disabled="uploading"
           drag
-          accept="image/*"
           class="w-full"
         >
           <el-icon class="el-icon--upload"><Upload /></el-icon>
@@ -431,47 +470,56 @@
           </div>
           <template #tip>
             <div class="el-upload__tip">
-              支持 JPG、PNG 格式，单张不超过 10MB
+              已上传 {{ uploadedPhotos.length }} 张{{ pendingFiles.length > 0 ? `，上传中 ${pendingFiles.length} 张` : '' }}
             </div>
           </template>
         </el-upload>
 
-        <div
-          v-if="uploadFileList.length > 0"
-          class="grid grid-cols-4 gap-2 mt-4"
-        >
-          <div
-            v-for="(uploadFile, index) in uploadFileList"
-            :key="index"
-            class="relative aspect-square rounded-lg overflow-hidden group"
-          >
-            <img
-              :src="uploadFile.url || URL.createObjectURL(uploadFile.raw || uploadFile)"
-              :alt="uploadFile.name"
-              class="w-full h-full object-cover"
-            />
-            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <el-button
-                type="danger"
-                size="small"
-                :icon="Delete"
-                circle
-                @click="removeFile(index)"
+        <!-- 已上传的照片 -->
+        <div v-if="uploadedPhotos.length > 0" class="space-y-2">
+          <div class="text-sm text-white/80 font-semibold">已上传 ({{ uploadedPhotos.length }})</div>
+          <div class="grid grid-cols-4 gap-2">
+            <div
+              v-for="photo in uploadedPhotos"
+              :key="photo.id"
+              class="relative aspect-square rounded-lg overflow-hidden group border-2 border-green-500/50"
+            >
+              <img
+                :src="photo.thumbnailPath || photo.filePath"
+                :alt="photo.title || 'photo'"
+                class="w-full h-full object-contain bg-black/20"
               />
+              <div class="absolute top-1 right-1 bg-green-500 rounded-full p-1">
+                <el-icon :size="12" class="text-white"><Check /></el-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 上传中的文件 -->
+        <div v-if="pendingFiles.length > 0" class="space-y-2">
+          <div class="text-sm text-white/80 font-semibold">上传中 ({{ pendingFiles.length }})</div>
+          <div class="grid grid-cols-4 gap-2">
+            <div
+              v-for="(file, index) in pendingFiles"
+              :key="index"
+              class="relative aspect-square rounded-lg overflow-hidden group border-2 border-yellow-500/50"
+            >
+              <img
+                :src="URL.createObjectURL(file)"
+                :alt="file.name"
+                class="w-full h-full object-contain bg-black/20"
+              />
+              <div class="absolute inset-0 bg-black/70 flex items-center justify-center">
+                <el-icon class="animate-spin text-white" :size="24"><Loading /></el-icon>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <el-button @click="photoUploadDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="uploading"
-          @click="handlePhotoUpload"
-        >
-          上传
-        </el-button>
+        <el-button @click="closePhotoUploadDialog">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -481,9 +529,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete, UploadFilled } from '@element-plus/icons-vue'
+import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete, UploadFilled, Check, Loading } from '@element-plus/icons-vue'
 import { getConcertPage, createConcert, getConcertDetail, deleteConcertRecord, updateConcertRecord, updateConcert } from '@/api/concert'
-import { uploadCoverImage, batchUploadPhotos } from '@/api/photo'
+import { uploadCoverImage, uploadPhoto, getPhotoPage } from '@/api/photo'
+import type { Photo } from '@/api/photo'
 import type { ConcertPageItem } from '@/types/api'
 import AnimatedButton from '@/components/uiverse/AnimatedButton.vue'
 import AnimatedCard from '@/components/uiverse/AnimatedCard.vue'
@@ -502,6 +551,9 @@ const pageSize = ref(8)
 const filterStatus = ref<number | 'all'>('all')
 const keyword = ref('')
 const statusCounts = ref<Record<number, number>>({})
+const photoMap = reactive<Record<number, Photo[]>>({})
+const MAX_PHOTO_SIZE = 10 * 1024 * 1024
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
 
 const statusOptions = [
   { label: '全部', value: 'all' as const },
@@ -526,10 +578,32 @@ async function loadConcerts() {
     concertList.value = res.data.page?.list || []
     total.value = res.data.page?.total || 0
     statusCounts.value = res.data.statusCounts || {}
+    await loadConcertPhotos(concertList.value)
   } catch (e) {
     // 错误在 request 拦截器中已统一提示
   } finally {
     loading.value = false
+  }
+}
+
+async function loadConcertPhotos(list: ConcertPageItem[]) {
+  if (!list || list.length === 0) return
+  try {
+    await Promise.all(
+      list.map(async concert => {
+        if (!concert.recordId) return
+        if (photoMap[concert.recordId] && photoMap[concert.recordId].length > 0) return
+        const res = await getPhotoPage({
+          concertRecordId: concert.recordId,
+          pageNo: 1,
+          pageSize: 6,
+        })
+        const photos = (res.data?.list || res.data?.page?.list || []) as any[]
+        photoMap[concert.recordId] = photos
+      })
+    )
+  } catch (err) {
+    // 静默失败，避免影响主列表
   }
 }
 
@@ -806,41 +880,131 @@ async function handleDelete(recordId: number) {
 // 照片相关功能
 const photoUploadDialogVisible = ref(false)
 const currentConcertId = ref<number | null>(null)
-const uploadFileList = ref<any[]>([])
+const pendingFiles = ref<File[]>([])
+const uploadedPhotos = ref<Photo[]>([])
 const uploading = ref(false)
+const uploadingFiles = ref<Set<string>>(new Set())
 
 function openPhotoUploadDialog(concertId: number) {
   currentConcertId.value = concertId
   photoUploadDialogVisible.value = true
-  uploadFileList.value = []
+  pendingFiles.value = []
+  uploadedPhotos.value = []
+  uploadingFiles.value.clear()
+  // 加载已有照片
+  if (photoMap[concertId]) {
+    uploadedPhotos.value = [...photoMap[concertId]]
+  }
 }
 
-function removeFile(index: number) {
-  uploadFileList.value.splice(index, 1)
+function closePhotoUploadDialog() {
+  photoUploadDialogVisible.value = false
+  // 刷新对应记录的照片列表
+  if (currentConcertId.value) {
+    refreshConcertPhotos(currentConcertId.value)
+  }
+  pendingFiles.value = []
+  uploadedPhotos.value = []
+  uploadingFiles.value.clear()
 }
 
-async function handlePhotoUpload() {
-  if (!currentConcertId.value || uploadFileList.value.length === 0) {
-    ElMessage.warning('请选择要上传的照片')
+function beforePhotoUpload(file: File) {
+  if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+    ElMessage.error('仅支持 JPG/PNG/GIF/WEBP 格式')
+    return false
+  }
+  if (file.size > MAX_PHOTO_SIZE) {
+    ElMessage.error('单张图片不能超过 10MB')
+    return false
+  }
+  // 添加到待上传列表（用于显示）
+  pendingFiles.value.push(file)
+  return true // 允许自动上传
+}
+
+async function handlePhotoUpload(options: any) {
+  const { file } = options
+  if (!currentConcertId.value) {
+    ElMessage.warning('缺少演唱会记录 ID，无法上传')
     return
   }
 
+  uploading.value = true
+  uploadingFiles.value.add(file.name)
+  
   try {
-    uploading.value = true
-    const files = uploadFileList.value.map(uploadFile => uploadFile.raw || uploadFile).filter(Boolean) as File[]
-    await batchUploadPhotos(files, {
+    const res = await uploadPhoto(file, {
       concertRecordId: currentConcertId.value,
     })
-
-    ElMessage.success('照片上传成功')
-    photoUploadDialogVisible.value = false
-    uploadFileList.value = []
-    loadConcerts()
-  } catch (error) {
-    ElMessage.error('照片上传失败')
+    
+    if (res.code === 0 && res.data) {
+      // 从待上传列表中移除
+      const index = pendingFiles.value.findIndex(f => f.name === file.name)
+      if (index !== -1) {
+        pendingFiles.value.splice(index, 1)
+      }
+      
+      // 添加到已上传列表
+      const newPhoto: Photo = {
+        id: res.data.id,
+        filePath: res.data.filePath,
+        thumbnailPath: res.data.thumbnailPath,
+        createTime: res.data.createTime,
+      }
+      uploadedPhotos.value.push(newPhoto)
+      
+      // 更新 photoMap
+      if (!photoMap[currentConcertId.value]) {
+        photoMap[currentConcertId.value] = []
+      }
+      photoMap[currentConcertId.value].unshift(newPhoto)
+      
+      ElMessage.success('上传成功')
+    } else {
+      ElMessage.error(res.msg || '上传失败')
+      // 上传失败时也从待上传列表中移除
+      const index = pendingFiles.value.findIndex(f => f.name === file.name)
+      if (index !== -1) {
+        pendingFiles.value.splice(index, 1)
+      }
+    }
+  } catch (error: any) {
+    console.error('照片上传失败:', error)
+    ElMessage.error(error.message || '照片上传失败')
+    // 上传失败时也从待上传列表中移除
+    const index = pendingFiles.value.findIndex(f => f.name === file.name)
+    if (index !== -1) {
+      pendingFiles.value.splice(index, 1)
+    }
   } finally {
-    uploading.value = false
+    uploadingFiles.value.delete(file.name)
+    if (uploadingFiles.value.size === 0) {
+      uploading.value = false
+    }
   }
+}
+
+async function refreshConcertPhotos(concertId: number) {
+  try {
+    const res = await getPhotoPage({
+      concertRecordId: concertId,
+      pageNo: 1,
+      pageSize: 6,
+    })
+    const photos = (res.data?.list || res.data?.page?.list || []) as Photo[]
+    photoMap[concertId] = photos
+  } catch (err) {
+    // 静默失败
+  }
+}
+
+function handlePhotoUploadSuccess() {
+  // 成功处理已在 handlePhotoUpload 中完成
+}
+
+function handlePhotoUploadError() {
+  ElMessage.error('照片上传失败')
+  uploading.value = false
 }
 
 onMounted(() => {

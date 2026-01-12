@@ -473,6 +473,7 @@ const loadPhotos = async () => {
     const params: any = {
       pageNo: pageNo.value,
       pageSize: pageSize.value,
+      unlinkedOnly: true, // 只展示未绑定旅行/演唱会的照片
     }
     
     if (filterCategoryId.value !== null) {
