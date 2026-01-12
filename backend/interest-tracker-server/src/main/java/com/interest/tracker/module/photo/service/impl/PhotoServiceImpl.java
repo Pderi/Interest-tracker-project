@@ -70,12 +70,15 @@ public class PhotoServiceImpl implements PhotoService {
         String fileUrl;
         try {
             // 使用文件的字节数组创建输入流上传原图
+            byte[] fileBytes = file.getBytes();
             fileUrl = tencentCosService.uploadFile(
-                    new java.io.ByteArrayInputStream(file.getBytes()), 
+                    new java.io.ByteArrayInputStream(fileBytes), 
                     fileKey, 
                     file.getContentType());
+            log.info("照片上传成功，Key: {}, URL: {}", fileKey, fileUrl);
         } catch (Exception e) {
-            log.error("文件上传失败", e);
+            log.error("文件上传失败，Key: {}, 文件名: {}, 文件大小: {} bytes", 
+                    fileKey, file.getOriginalFilename(), file.getSize(), e);
             throw exception(PHOTO_UPLOAD_FAILED);
         }
 
@@ -129,6 +132,35 @@ public class PhotoServiceImpl implements PhotoService {
         return files.stream()
                 .map(file -> uploadPhoto(file, reqVO))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public String uploadCoverImage(MultipartFile file) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            throw exception(UNAUTHORIZED);
+        }
+
+        // 1. 文件校验
+        validateFile(file);
+
+        // 2. 生成文件Key并上传到COS
+        String fileKey = tencentCosService.generateFileKey(userId, file.getOriginalFilename());
+        String fileUrl;
+        try {
+            byte[] fileBytes = file.getBytes();
+            fileUrl = tencentCosService.uploadFile(
+                    new java.io.ByteArrayInputStream(fileBytes),
+                    fileKey,
+                    file.getContentType());
+            log.info("封面上传成功，Key: {}, URL: {}", fileKey, fileUrl);
+        } catch (Exception e) {
+            log.error("封面上传失败，Key: {}, 文件名: {}, 文件大小: {} bytes",
+                    fileKey, file.getOriginalFilename(), file.getSize(), e);
+            throw exception(PHOTO_UPLOAD_FAILED);
+        }
+
+        return fileUrl;
     }
 
     @Override
@@ -322,7 +354,7 @@ public class PhotoServiceImpl implements PhotoService {
         }
 
         // 文件大小限制（10MB）
-        long maxSize = 10 * 1024 * 1024;
+        long maxSize = 50 * 1024 * 1024;
         if (file.getSize() > maxSize) {
             throw exception(PHOTO_FILE_TOO_LARGE);
         }

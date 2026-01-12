@@ -277,19 +277,41 @@
           </el-form-item>
 
           <el-form-item label="封面">
-            <div class="w-full flex items-center gap-3">
-              <el-input
-                v-model="form.coverUrl"
-                placeholder="支持粘贴图片地址"
-              />
+            <div class="w-full">
+              <el-upload
+                :auto-upload="true"
+                :on-success="handleCoverUploadSuccess"
+                :on-error="handleCoverUploadError"
+                :before-upload="beforeCoverUpload"
+                :show-file-list="false"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                :http-request="handleCoverUpload"
+                class="cover-upload"
+              >
+                <template #trigger>
+                  <el-button type="primary" :loading="coverUploading">
+                    <el-icon><UploadFilled /></el-icon>
+                    选择封面
+                  </el-button>
+                </template>
+              </el-upload>
               <div
                 v-if="form.coverUrl"
-                class="cover-preview"
+                class="cover-preview mt-3"
               >
                 <img
                   :src="form.coverUrl"
                   alt="cover preview"
                 />
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  class="remove-cover-btn"
+                  @click="form.coverUrl = ''"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
             </div>
           </el-form-item>
@@ -384,8 +406,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Headset, StarFilled, Search, ChatLineRound } from '@element-plus/icons-vue'
+import { Plus, Headset, StarFilled, Search, ChatLineRound, UploadFilled, Delete } from '@element-plus/icons-vue'
 import { getAlbumPage, createAlbum, getAlbumDetail, updateAlbum, updateAlbumRecord, deleteAlbumRecord } from '@/api/music'
+import { uploadCoverImage } from '@/api/photo'
 import type { AlbumPageItem } from '@/types/api'
 import { 
   AnimatedButton, 
@@ -393,7 +416,7 @@ import {
   EmptyState,
   SkeletonCard,
   AnimatedSearch,
-  AnimatedTag
+  AnimatedTag,
 } from '@/components/uiverse'
 
 const router = useRouter()
@@ -584,6 +607,55 @@ async function openEditDialog(item: AlbumPageItem) {
 }
 
 const submitLoading = ref(false)
+const coverUploading = ref(false)
+
+// 封面上传处理
+const MAX_COVER_SIZE = 50 * 1024 * 1024 // 50MB
+
+const beforeCoverUpload = (file: File) => {
+  // 检查文件大小
+  if (file.size > MAX_COVER_SIZE) {
+    ElMessage.error(`文件大小超过50MB，请选择较小的文件`)
+    return false
+  }
+  
+  // 检查文件类型
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+  if (!validTypes.includes(file.type)) {
+    ElMessage.error(`文件格式不支持，请选择 jpg、png、gif 或 webp 格式的图片`)
+    return false
+  }
+  
+  return true
+}
+
+const handleCoverUpload = async (options: any) => {
+  const { file } = options
+  coverUploading.value = true
+  try {
+    const res = await uploadCoverImage(file)
+    if (res.code === 0 && res.data) {
+      form.coverUrl = res.data
+      ElMessage.success('封面上传成功')
+    } else {
+      ElMessage.error(res.msg || '封面上传失败')
+    }
+  } catch (error: any) {
+    console.error('封面上传失败:', error)
+    ElMessage.error(error.message || '封面上传失败')
+  } finally {
+    coverUploading.value = false
+  }
+}
+
+const handleCoverUploadSuccess = () => {
+  // 成功处理已在 handleCoverUpload 中完成
+}
+
+const handleCoverUploadError = () => {
+  ElMessage.error('封面上传失败')
+  coverUploading.value = false
+}
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -1143,9 +1215,14 @@ onMounted(() => {
   color: #cbd5ff;
 }
 
+.cover-upload {
+  width: 100%;
+}
+
 .cover-preview {
-  width: 56px;
-  height: 56px;
+  position: relative;
+  width: 120px;
+  height: 120px;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1158,6 +1235,13 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.remove-cover-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
 }
 
 /* 移动端适配 */

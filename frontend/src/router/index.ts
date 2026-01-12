@@ -37,6 +37,14 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'photo/:id',
+        name: 'PhotoDetail',
+        component: () => import('@/views/Photo/Detail.vue'),
+        meta: {
+          title: '照片详情',
+        },
+      },
+      {
         path: 'movie',
         name: 'Movie',
         component: () => import('@/views/Movie/index.vue'),

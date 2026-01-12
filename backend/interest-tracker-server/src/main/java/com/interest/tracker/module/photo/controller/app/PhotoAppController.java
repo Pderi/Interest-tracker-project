@@ -103,6 +103,16 @@ public class PhotoAppController {
         return success(result);
     }
 
+    /**
+     * 上传封面图片（仅上传文件，不创建照片记录）
+     * 供其他模块（影视、音乐、图书）使用
+     */
+    @PostMapping("/upload-cover")
+    @Operation(summary = "上传封面图片")
+    public CommonResult<String> uploadCoverImage(@RequestParam("file") MultipartFile file) {
+        String fileUrl = photoService.uploadCoverImage(file);
+        return success(fileUrl);
+    }
 
 }
 

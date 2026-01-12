@@ -33,6 +33,15 @@ public interface PhotoService {
     List<PhotoUploadRespVO> batchUploadPhotos(List<MultipartFile> files, PhotoUploadReqVO reqVO);
 
     /**
+     * 上传封面图片（仅上传文件，不创建照片记录）
+     * 供其他模块（影视、音乐、图书）使用
+     *
+     * @param file 文件
+     * @return 文件访问URL
+     */
+    String uploadCoverImage(MultipartFile file);
+
+    /**
      * 更新照片信息
      *
      * @param reqVO 更新请求

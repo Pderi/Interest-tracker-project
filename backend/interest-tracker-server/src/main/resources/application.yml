@@ -13,6 +13,11 @@ spring:
       # 4. 如果找不到，可以尝试依次测试这些端口
       host: 127.0.0.1        # 白鲸加速器本地代理地址（通常是 127.0.0.1）
       port: 7890   # 白鲸加速器代理端口（请根据实际端口修改，常见：7890）
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 50MB      # 单个文件最大大小
+      max-request-size: 50MB   # 整个请求最大大小（包括所有文件）
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -26,8 +31,9 @@ spring:
     time-zone: GMT+8
   config:
     import:
-          - optional:file:./application-cos.yml  # 可选的外部配置文件，如果不存在不会报错
-          - optional:file:./application-secret.yml  # 其他敏感配置（如果有）
+      - optional:file:./application-cos.yml  # 可选的外部配置文件（相对于工作目录），如果不存在不会报错
+      - optional:file:./application-secret.yml  # 其他敏感配置（如果有）
+      - optional:classpath:application-cos.yml  # 可选：如果外部文件不存在，尝试从classpath加载
 
 # MyBatis Plus 配置
 mybatis-plus:

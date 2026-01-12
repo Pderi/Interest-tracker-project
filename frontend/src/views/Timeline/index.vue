@@ -50,15 +50,15 @@
 
                 <!-- 标签 -->
                 <div v-if="item.tags && item.tags.length" class="flex flex-wrap gap-2 timeline-tags">
-                  <AnimatedTag
-                    v-for="(tag, tagIndex) in item.tags"
+                  <el-tag
+                    v-for="tag in item.tags"
                     :key="tag"
-                    variant="glow"
-                    :animated="tagIndex % 2 === 0"
+                    type="info"
+                    size="small"
                     class="timeline-tag-item"
                   >
                     {{ tag }}
-                  </AnimatedTag>
+                  </el-tag>
                 </div>
 
                 <!-- 图片预览 -->
@@ -96,7 +96,6 @@ import dayjs from 'dayjs'
 import { 
   AnimatedButton, 
   AnimatedCard,
-  AnimatedTag
 } from '@/components/uiverse'
 
 // 假数据

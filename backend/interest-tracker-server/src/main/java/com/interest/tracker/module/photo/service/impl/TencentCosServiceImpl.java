@@ -40,21 +40,28 @@ public class TencentCosServiceImpl implements TencentCosService {
 
     @PostConstruct
     public void init() {
+        log.info("开始初始化腾讯云COS客户端...");
+        log.debug("COS配置信息 - Region: {}, BucketName: {}, SecretId: {}, Domain: {}", 
+                cosProperties.getRegion(), 
+                cosProperties.getBucketName(),
+                cosProperties.getSecretId() != null && !cosProperties.getSecretId().isEmpty() ? "已配置" : "未配置",
+                cosProperties.getDomain());
+        
         // 校验配置
         if (cosProperties.getSecretId() == null || cosProperties.getSecretId().isEmpty()) {
-            log.warn("腾讯云COS SecretId未配置，COS功能将不可用");
+            log.error("腾讯云COS SecretId未配置，COS功能将不可用！请检查 application-cos.yml 或环境变量");
             return;
         }
         if (cosProperties.getSecretKey() == null || cosProperties.getSecretKey().isEmpty()) {
-            log.warn("腾讯云COS SecretKey未配置，COS功能将不可用");
+            log.error("腾讯云COS SecretKey未配置，COS功能将不可用！请检查 application-cos.yml 或环境变量");
             return;
         }
         if (cosProperties.getBucketName() == null || cosProperties.getBucketName().isEmpty()) {
-            log.warn("腾讯云COS BucketName未配置，COS功能将不可用");
+            log.error("腾讯云COS BucketName未配置，COS功能将不可用！请检查 application-cos.yml 或环境变量");
             return;
         }
         if (cosProperties.getRegion() == null || cosProperties.getRegion().isEmpty()) {
-            log.warn("腾讯云COS Region未配置，COS功能将不可用");
+            log.error("腾讯云COS Region未配置，COS功能将不可用！请检查 application-cos.yml 或环境变量");
             return;
         }
 
@@ -69,16 +76,20 @@ public class TencentCosServiceImpl implements TencentCosService {
             clientConfig.setSocketTimeout(cosProperties.getSocketTimeout());
 
             cosClient = new COSClient(cred, clientConfig);
-            log.info("腾讯云COS客户端初始化成功，Bucket: {}, Region: {}", 
-                    cosProperties.getBucketName(), cosProperties.getRegion());
+            log.info("腾讯云COS客户端初始化成功，Bucket: {}, Region: {}, Domain: {}", 
+                    cosProperties.getBucketName(), 
+                    cosProperties.getRegion(),
+                    cosProperties.getDomain());
         } catch (Exception e) {
-            log.error("腾讯云COS客户端初始化失败", e);
+            log.error("腾讯云COS客户端初始化失败，Region: {}, Bucket: {}", 
+                    cosProperties.getRegion(), cosProperties.getBucketName(), e);
         }
     }
 
     @Override
     public String uploadFile(InputStream inputStream, String fileKey, String contentType) {
         if (cosClient == null) {
+            log.error("COS客户端未初始化，无法上传文件。请检查COS配置是否正确。");
             throw exception(PHOTO_UPLOAD_FAILED);
         }
 
@@ -110,14 +121,17 @@ public class TencentCosServiceImpl implements TencentCosService {
             log.debug("文件上传成功，Key: {}, URL: {}", fileKey, fileUrl);
             return fileUrl;
         } catch (CosServiceException e) {
-            log.error("COS服务异常，上传失败。Key: {}, ErrorCode: {}, ErrorMessage: {}", 
-                    fileKey, e.getErrorCode(), e.getErrorMessage(), e);
+            log.error("COS服务异常，上传失败。Key: {}, ErrorCode: {}, ErrorMessage: {}, Bucket: {}", 
+                    fileKey, e.getErrorCode(), e.getErrorMessage(), cosProperties.getBucketName(), e);
             throw exception(PHOTO_UPLOAD_FAILED);
         } catch (CosClientException e) {
-            log.error("COS客户端异常，上传失败。Key: {}", fileKey, e);
+            log.error("COS客户端异常，上传失败。Key: {}, Bucket: {}, Region: {}", 
+                    fileKey, cosProperties.getBucketName(), cosProperties.getRegion(), e);
             throw exception(PHOTO_UPLOAD_FAILED);
         } catch (Exception e) {
-            log.error("文件上传失败。Key: {}", fileKey, e);
+            log.error("文件上传失败。Key: {}, Bucket: {}, Region: {}, ContentType: {}, 异常类型: {}", 
+                    fileKey, cosProperties.getBucketName(), cosProperties.getRegion(), contentType, 
+                    e.getClass().getName(), e);
             throw exception(PHOTO_UPLOAD_FAILED);
         }
     }
