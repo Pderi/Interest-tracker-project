@@ -6,7 +6,7 @@
       </div>
       <el-menu
         :default-active="activeMenu"
-        router
+        :router="true"
         class="border-0 bg-transparent"
         text-color="rgba(226, 232, 240, 0.8)"
         active-text-color="#00d4ff"

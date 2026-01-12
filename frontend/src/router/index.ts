@@ -90,6 +90,16 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Travel/index.vue'),
         meta: {
           title: '旅游',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: 'travel/:id',
+        name: 'TravelDetail',
+        component: () => import('@/views/Travel/Detail.vue'),
+        meta: {
+          title: '旅游详情',
+          requiresAuth: true,
         },
       },
       {
@@ -98,6 +108,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Concert/index.vue'),
         meta: {
           title: '演唱会',
+          requiresAuth: true,
         },
       },
       {
@@ -142,8 +153,10 @@ router.beforeEach((to, from, next) => {
     document.title = `${to.meta.title} - 兴趣追踪平台`
   }
 
-  // 检查是否需要登录
-  if (to.meta.requiresAuth && !userStore.isLoggedIn()) {
+  // 检查是否需要登录（检查当前路由或其父路由的 requiresAuth）
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  
+  if (requiresAuth && !userStore.isLoggedIn()) {
     next({
       path: '/login',
       query: { redirect: to.fullPath },

@@ -22,28 +22,28 @@ export function getBookPage(params: {
   endReadDate?: string
   sort?: string
 }) {
-  return request.get<CommonResult<BookPageWithStats>>('/api/books', {
+  return request.get<CommonResult<BookPageWithStats>>('/books', {
     params,
   })
 }
 
 // 创建图书记录（含阅读记录）
 export function createBook(data: BookCreateReq) {
-  return request.post<CommonResult<BookCreateRes>>('/api/books', data)
+  return request.post<CommonResult<BookCreateRes>>('/books', data)
 }
 
 // 获取图书详情
 export function getBookDetail(id: number) {
-  return request.get<CommonResult<BookDetail>>(`/api/books/${id}`)
+  return request.get<CommonResult<BookDetail>>(`/books/${id}`)
 }
 
 // 更新阅读记录
 export function updateBookRecord(recordId: number, data: BookRecordUpdateReq) {
-  return request.put<CommonResult<boolean>>(`/api/books/records/${recordId}`, data)
+  return request.put<CommonResult<boolean>>(`/books/records/${recordId}`, data)
 }
 
 // 删除阅读记录
 export function deleteBookRecord(recordId: number) {
-  return request.delete<CommonResult<boolean>>(`/api/books/records/${recordId}`)
+  return request.delete<CommonResult<boolean>>(`/books/records/${recordId}`)
 }
 

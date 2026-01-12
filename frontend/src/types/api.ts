@@ -391,3 +391,231 @@ export interface MatchUpdateReq {
   notes?: string
 }
 
+/**
+ * 演唱会分页列表响应（包含统计信息）
+ */
+export interface ConcertPageWithStats {
+  page: PageResult<ConcertPageItem>
+  statusCounts: Record<number, number> // key为状态值，value为数量
+}
+
+/**
+ * 演唱会分页列表项
+ */
+export interface ConcertPageItem {
+  recordId: number
+  concertId: number
+  artist: string
+  title?: string
+  concertDate?: string
+  venue?: string
+  city?: string
+  country?: string
+  concertType?: number // 1 演唱会 2 音乐节 3 演出 4 其他
+  posterUrl?: string
+  watchStatus: number // 1 想看 2 已看
+  personalRating?: number
+  watchDate?: string
+  ticketPrice?: number
+  seatInfo?: string
+  comment?: string
+  createTime: string
+}
+
+/**
+ * 演唱会详情
+ */
+export interface ConcertDetail {
+  concert: {
+    id: number
+    artist: string
+    title?: string
+    concertDate?: string
+    venue?: string
+    city?: string
+    country?: string
+    concertType?: number
+    description?: string
+    posterUrl?: string
+  }
+  record?: {
+    id: number
+    watchStatus: number
+    personalRating?: number
+    watchDate?: string
+    ticketPrice?: number
+    seatInfo?: string
+    comment?: string
+    tags?: string
+  } | null
+}
+
+/**
+ * 演唱会创建请求（手动录入）
+ */
+export interface ConcertCreateReq {
+  artist: string
+  title?: string
+  concertDate?: string
+  venue?: string
+  city?: string
+  country?: string
+  concertType?: number
+  description?: string
+  posterUrl?: string
+  watchStatus?: number
+  personalRating?: number
+  watchDate?: string
+  ticketPrice?: number
+  seatInfo?: string
+  tags?: string
+  comment?: string
+}
+
+export interface ConcertCreateRes {
+  concertId: number
+  recordId: number
+}
+
+/**
+ * 观演记录更新
+ */
+export interface ConcertRecordUpdateReq {
+  id?: number
+  watchStatus?: number
+  personalRating?: number
+  watchDate?: string
+  ticketPrice?: number
+  seatInfo?: string
+  comment?: string
+}
+
+/**
+ * 演唱会信息更新
+ */
+export interface ConcertUpdateReq {
+  id?: number
+  artist?: string
+  title?: string
+  concertDate?: string
+  venue?: string
+  city?: string
+  country?: string
+  concertType?: number
+  description?: string
+  posterUrl?: string
+}
+
+/**
+ * 旅游分页列表响应（包含统计信息）
+ */
+export interface TravelPageWithStats {
+  page: PageResult<TravelPageItem>
+  statusCounts: Record<number, number> // key为状态值，value为数量
+}
+
+/**
+ * 旅游分页列表项
+ */
+export interface TravelPageItem {
+  recordId: number
+  placeId: number
+  name: string
+  country?: string
+  city?: string
+  address?: string
+  placeType?: number // 1 城市 2 景点 3 国家 4 其他
+  coverUrl?: string
+  travelStatus: number // 1 想去 2 计划中 3 已去
+  personalRating?: number
+  travelDate?: string
+  travelDuration?: number
+  expense?: number
+  comment?: string
+  createTime: string
+}
+
+/**
+ * 旅游详情
+ */
+export interface TravelDetail {
+  place: {
+    id: number
+    name: string
+    country?: string
+    city?: string
+    address?: string
+    latitude?: number
+    longitude?: number
+    placeType?: number
+    description?: string
+    coverUrl?: string
+  }
+  record?: {
+    id: number
+    travelStatus: number
+    personalRating?: number
+    travelDate?: string
+    travelDuration?: number
+    expense?: number
+    comment?: string
+    tags?: string
+  } | null
+}
+
+/**
+ * 旅游创建请求（手动录入）
+ */
+export interface TravelCreateReq {
+  name: string
+  country?: string
+  city?: string
+  address?: string
+  latitude?: number
+  longitude?: number
+  placeType?: number
+  description?: string
+  coverUrl?: string
+  travelStatus?: number
+  personalRating?: number
+  travelDate?: string
+  travelDuration?: number
+  expense?: number
+  tags?: string
+  comment?: string
+}
+
+export interface TravelCreateRes {
+  placeId: number
+  recordId: number
+}
+
+/**
+ * 旅游记录更新
+ */
+export interface TravelRecordUpdateReq {
+  id?: number
+  travelStatus?: number
+  personalRating?: number
+  travelDate?: string
+  travelDuration?: number
+  expense?: number
+  comment?: string
+}
+
+/**
+ * 旅游地点信息更新
+ */
+export interface TravelPlaceUpdateReq {
+  id?: number
+  name?: string
+  country?: string
+  city?: string
+  address?: string
+  latitude?: number
+  longitude?: number
+  placeType?: number
+  description?: string
+  coverUrl?: string
+}
+

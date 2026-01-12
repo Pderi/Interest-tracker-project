@@ -22,28 +22,28 @@ export function getMatchPage(params: {
   startMatchDate?: string
   endMatchDate?: string
 }) {
-  return request.get<CommonResult<MatchPageWithStats>>('/api/matches', {
+  return request.get<CommonResult<MatchPageWithStats>>('/matches', {
     params,
   })
 }
 
 // 创建比赛记录
 export function createMatch(data: MatchCreateReq) {
-  return request.post<CommonResult<MatchCreateRes>>('/api/matches', data)
+  return request.post<CommonResult<MatchCreateRes>>('/matches', data)
 }
 
 // 获取比赛详情
 export function getMatchDetail(id: number) {
-  return request.get<CommonResult<MatchDetail>>(`/api/matches/${id}`)
+  return request.get<CommonResult<MatchDetail>>(`/matches/${id}`)
 }
 
 // 更新比赛记录
 export function updateMatch(matchId: number, data: MatchUpdateReq) {
-  return request.put<CommonResult<boolean>>(`/api/matches/${matchId}`, data)
+  return request.put<CommonResult<boolean>>(`/matches/${matchId}`, data)
 }
 
 // 删除比赛记录
 export function deleteMatch(matchId: number) {
-  return request.delete<CommonResult<boolean>>(`/api/matches/${matchId}`)
+  return request.delete<CommonResult<boolean>>(`/matches/${matchId}`)
 }
 

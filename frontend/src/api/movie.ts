@@ -22,29 +22,29 @@ export function getMoviePage(params: {
   endWatchDate?: string
   sort?: string
 }) {
-  return request.get<CommonResult<MoviePageWithStats>>('/api/movies', {
+  return request.get<CommonResult<MoviePageWithStats>>('/movies', {
     params,
   })
 }
 
 // 创建影视记录（含观影记录）
 export function createMovie(data: MovieCreateReq) {
-  return request.post<CommonResult<MovieCreateRes>>('/api/movies', data)
+  return request.post<CommonResult<MovieCreateRes>>('/movies', data)
 }
 
 // 获取影视详情
 export function getMovieDetail(id: number) {
-  return request.get<CommonResult<MovieDetail>>(`/api/movies/${id}`)
+  return request.get<CommonResult<MovieDetail>>(`/movies/${id}`)
 }
 
 // 更新观影记录
 export function updateMovieRecord(recordId: number, data: MovieRecordUpdateReq) {
-  return request.put<CommonResult<boolean>>(`/api/movies/records/${recordId}`, data)
+  return request.put<CommonResult<boolean>>(`/movies/records/${recordId}`, data)
 }
 
 // 删除观影记录
 export function deleteMovieRecord(recordId: number) {
-  return request.delete<CommonResult<boolean>>(`/api/movies/records/${recordId}`)
+  return request.delete<CommonResult<boolean>>(`/movies/records/${recordId}`)
 }
 
 

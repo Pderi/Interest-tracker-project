@@ -28,7 +28,7 @@ function handleLogout() {
 
 // 创建axios实例
 const service: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_API,
+  baseURL: import.meta.env.VITE_APP_BASE_API || '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8',
@@ -78,7 +78,7 @@ service.interceptors.response.use(
 
             // 调用刷新 token 接口
             return service
-              .post<CommonResult<string>>('/api/user/refresh-token')
+              .post<CommonResult<string>>('/user/refresh-token')
               .then((refreshRes) => {
                 const newToken = refreshRes.data
                 if (newToken) {
@@ -151,7 +151,7 @@ service.interceptors.response.use(
           isRefreshing = true
 
           return service
-            .post<CommonResult<string>>('/api/user/refresh-token')
+            .post<CommonResult<string>>('/user/refresh-token')
             .then((refreshRes) => {
               const newToken = refreshRes.data
               if (newToken) {

@@ -23,24 +23,24 @@ export function getAlbumPage(params: {
   endListenDate?: string
   sort?: string
 }) {
-  return request.get<CommonResult<AlbumPageWithStats>>('/api/music/albums', {
+  return request.get<CommonResult<AlbumPageWithStats>>('/music/albums', {
     params,
   })
 }
 
 // 创建专辑记录（含听歌记录）
 export function createAlbum(data: AlbumCreateReq) {
-  return request.post<CommonResult<AlbumCreateRes>>('/api/music/albums', data)
+  return request.post<CommonResult<AlbumCreateRes>>('/music/albums', data)
 }
 
 // 获取专辑详情
 export function getAlbumDetail(id: number) {
-  return request.get<CommonResult<AlbumDetail>>(`/api/music/albums/${id}`)
+  return request.get<CommonResult<AlbumDetail>>(`/music/albums/${id}`)
 }
 
 // 更新听歌记录
 export function updateAlbumRecord(recordId: number, data: AlbumRecordUpdateReq) {
-  return request.put<CommonResult<boolean>>(`/api/music/albums/records/${recordId}`, data)
+  return request.put<CommonResult<boolean>>(`/music/albums/records/${recordId}`, data)
 }
 
 // 更新专辑信息
@@ -54,11 +54,11 @@ export function updateAlbum(albumId: number, data: {
   totalTracks?: number
   duration?: number
 }) {
-  return request.put<CommonResult<boolean>>(`/api/music/albums/${albumId}`, { id: albumId, ...data })
+  return request.put<CommonResult<boolean>>(`/music/albums/${albumId}`, { id: albumId, ...data })
 }
 
 // 删除听歌记录
 export function deleteAlbumRecord(recordId: number) {
-  return request.delete<CommonResult<boolean>>(`/api/music/albums/records/${recordId}`)
+  return request.delete<CommonResult<boolean>>(`/music/albums/records/${recordId}`)
 }
 

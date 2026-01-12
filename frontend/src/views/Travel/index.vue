@@ -13,13 +13,22 @@
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 w-full">
           <AnimatedButton
-            v-for="tag in tagOptions"
-            :key="tag.value"
-            :variant="filterTag === tag.value ? 'primary' : 'secondary'"
+            v-for="status in statusOptions"
+            :key="status.value"
+            :variant="filterStatus === status.value ? 'primary' : 'secondary'"
             size="small"
-            @click="changeTag(tag.value)"
+            @click="changeStatus(status.value)"
           >
-            {{ tag.label }}
+            <span>{{ status.label }}</span>
+            <span
+              v-if="status.value !== 'all' && statusCounts[status.value]"
+              class="ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium"
+              :class="filterStatus === status.value 
+                ? 'bg-white/20 text-white' 
+                : 'bg-white/10 text-gray-300'"
+            >
+              {{ statusCounts[status.value] }}
+            </span>
           </AnimatedButton>
         </div>
         <AnimatedSearch
@@ -62,7 +71,7 @@
       >
         <template
           v-for="(travel, index) in travelList"
-          :key="travel.id"
+          :key="travel.recordId"
         >
           <div class="flex flex-col gap-2 travel-card-wrapper" :style="{ animationDelay: `${index * 50}ms` }">
             <!-- 旅游卡片 -->
@@ -76,12 +85,12 @@
                 <div class="relative aspect-[4/3] overflow-hidden travel-poster-container">
                   <div class="poster-overlay"></div>
                   <img
-                    v-if="travel.imageUrl && !imageErrorMap[travel.id]"
-                    :src="travel.imageUrl"
-                    :alt="travel.location"
+                    v-if="travel.coverUrl && !imageErrorMap[travel.placeId]"
+                    :src="travel.coverUrl"
+                    :alt="travel.name"
                     class="travel-poster w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
-                    @error="handleImageError(travel.id)"
+                    @error="handleImageError(travel.placeId)"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10 poster-placeholder">
                     <el-icon :size="48" class="text-[#c3cfe2]/40">
@@ -91,35 +100,27 @@
 
                   <!-- 评分 -->
                   <div
-                    v-if="travel.rating != null"
+                    v-if="travel.personalRating != null"
                     class="rating-badge absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
                   >
                     <el-icon class="text-yellow-400 rating-star"><StarFilled /></el-icon>
-                    <span class="text-white text-sm font-semibold rating-value">{{ travel.rating }}</span>
+                    <span class="text-white text-sm font-semibold rating-value">{{ travel.personalRating }}</span>
                   </div>
                 </div>
 
                 <!-- 信息 -->
                 <div class="p-4 flex flex-col gap-2 glass-effect">
-                  <h3 class="text-lg font-semibold text-white line-clamp-1">{{ travel.location }}</h3>
+                  <h3 class="text-lg font-semibold text-white line-clamp-1">{{ travel.name }}</h3>
                   <p class="text-xs text-gray-400">
                     <span v-if="travel.country">{{ travel.country }}</span>
-                    <span v-if="travel.travelDate"> · {{ travel.travelDate }}</span>
+                    <span v-if="travel.city"> · {{ travel.city }}</span>
+                    <span v-if="travel.travelDate"> · {{ formatDate(travel.travelDate) }}</span>
                   </p>
 
-                  <!-- 标签 -->
-                  <div
-                    v-if="travel.tags"
-                    class="flex flex-wrap gap-2 mt-1 travel-tags"
-                  >
-                    <AnimatedTag
-                      v-for="(tag, tagIndex) in travel.tags.split(',')"
-                      :key="tag"
-                      variant="glow"
-                      :animated="tagIndex % 2 === 0"
-                      class="travel-tag-item"
-                    >
-                      {{ tag }}
+                  <!-- 状态标签 -->
+                  <div class="flex flex-wrap gap-2 mt-1">
+                    <AnimatedTag variant="glow" class="travel-tag-item">
+                      {{ getStatusLabel(travel.travelStatus) }}
                     </AnimatedTag>
                   </div>
 
@@ -127,84 +128,37 @@
                     <AnimatedButton
                       variant="outline"
                       size="small"
-                      @click.stop="openEditDialog()"
+                      @click.stop="openEditDialog(travel)"
                       class="action-btn edit-btn"
                     >
                       编辑
                     </AnimatedButton>
-                    <el-popconfirm
-                      title="确定删除该记录？"
-                      confirm-button-text="删除"
-                      cancel-button-text="取消"
-                      confirm-button-type="danger"
-                      @confirm="handleDelete(travel.id)"
-                    >
-                      <template #reference>
-                        <button
-                          @click.stop
-                          class="action-btn delete-btn"
-                        >
-                          删除
-                        </button>
-                      </template>
-                    </el-popconfirm>
-                  </div>
-                </div>
-              </div>
-            </AnimatedCard>
-
-            <!-- 照片展示区域 -->
-            <AnimatedCard
-              v-if="travel.photos && travel.photos.length > 0"
-              variant="glass"
-              class="photo-gallery-card"
-            >
-              <div class="p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    <el-icon class="text-[#00d4ff]/60">
-                      <Picture />
-                    </el-icon>
-                    <span class="text-sm text-gray-300">照片 ({{ travel.photos.length }})</span>
-                  </div>
-                  <div class="flex gap-2">
-                    <el-button
-                      v-if="travel.photos.length > 6"
-                      text
-                      size="small"
-                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
-                      @click="openAllPhotosDialog(travel)"
-                    >
-                      查看全部
-                    </el-button>
-                    <el-button
-                      text
-                      size="small"
-                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
-                      @click="openPhotoUploadDialog(travel.id)"
-                    >
-                      添加照片
-                    </el-button>
-                  </div>
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                  <div
-                    v-for="photo in travel.photos.slice(0, 6)"
-                    :key="photo.id"
-                    class="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
-                    @click="previewPhoto(photo)"
-                  >
-                    <img
-                      :src="photo.thumbnailPath || photo.filePath"
-                      :alt="photo.title"
-                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    <div
-                      v-if="travel.photos.length > 6 && photo === travel.photos[5]"
-                      class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-semibold cursor-pointer hover:bg-black/70 transition-colors"
-                      @click.stop="openAllPhotosDialog(travel)"
-                    >
-                      +{{ travel.photos.length - 6 }}
+                    <div class="flex gap-2">
+                      <AnimatedButton
+                        variant="outline"
+                        size="small"
+                        @click.stop="openPhotoUploadDialog(travel.recordId)"
+                        class="action-btn photo-btn"
+                      >
+                        <el-icon><Picture /></el-icon>
+                        照片
+                      </AnimatedButton>
+                      <el-popconfirm
+                        title="确定删除该记录？"
+                        confirm-button-text="删除"
+                        cancel-button-text="取消"
+                        confirm-button-type="danger"
+                        @confirm="handleDelete(travel.recordId)"
+                      >
+                        <template #reference>
+                          <button
+                            @click.stop
+                            class="action-btn delete-btn"
+                          >
+                            删除
+                          </button>
+                        </template>
+                      </el-popconfirm>
                     </div>
                   </div>
                 </div>
@@ -251,6 +205,193 @@
         />
       </div>
     </div>
+
+    <!-- 新建 / 编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? '添加旅游记录' : '编辑旅游记录'"
+      width="600px"
+      destroy-on-close
+      class="travel-dialog"
+    >
+      <div class="travel-form-wrapper glass-effect">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-width="100px"
+          class="travel-form"
+        >
+          <el-form-item
+            label="地点名称"
+            prop="name"
+          >
+            <el-input
+              v-model="form.name"
+              placeholder="请输入地点名称"
+            />
+          </el-form-item>
+
+          <el-form-item label="国家">
+            <el-input
+              v-model="form.country"
+              placeholder="请输入国家"
+            />
+          </el-form-item>
+
+          <el-form-item label="城市">
+            <el-input
+              v-model="form.city"
+              placeholder="请输入城市"
+            />
+          </el-form-item>
+
+          <el-form-item label="详细地址">
+            <el-input
+              v-model="form.address"
+              placeholder="请输入详细地址"
+            />
+          </el-form-item>
+
+          <el-form-item label="地点类型">
+            <el-select v-model="form.placeType" placeholder="请选择地点类型" class="w-full">
+              <el-option :value="1" label="城市" />
+              <el-option :value="2" label="景点" />
+              <el-option :value="3" label="国家" />
+              <el-option :value="4" label="其他" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="封面">
+            <div class="w-full">
+              <el-upload
+                :auto-upload="true"
+                :on-success="handleCoverUploadSuccess"
+                :on-error="handleCoverUploadError"
+                :before-upload="beforeCoverUpload"
+                :show-file-list="false"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                :http-request="handleCoverUpload"
+                class="cover-upload"
+              >
+                <template #trigger>
+                  <el-button type="primary" :loading="coverUploading">
+                    <el-icon><Upload /></el-icon>
+                    选择封面
+                  </el-button>
+                </template>
+              </el-upload>
+              <div
+                v-if="form.coverUrl"
+                class="cover-preview mt-3"
+              >
+                <img
+                  :src="form.coverUrl"
+                  alt="cover preview"
+                />
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  class="remove-cover-btn"
+                  @click="form.coverUrl = ''"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="简介">
+            <el-input
+              v-model="form.description"
+              type="textarea"
+              :rows="2"
+              placeholder="地点简介"
+            />
+          </el-form-item>
+
+          <el-form-item label="状态">
+            <el-select v-model="form.travelStatus" placeholder="请选择状态" class="w-full">
+              <el-option :value="1" label="想去" />
+              <el-option :value="2" label="计划中" />
+              <el-option :value="3" label="已去" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="旅游日期">
+            <el-date-picker
+              v-model="form.travelDate"
+              type="date"
+              placeholder="选择日期"
+              value-format="YYYY-MM-DD"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="旅游时长(天)">
+            <el-input-number
+              v-model="form.travelDuration"
+              :min="0"
+              placeholder="旅游时长"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="花费(元)">
+            <el-input-number
+              v-model="form.expense"
+              :min="0"
+              :precision="2"
+              placeholder="花费"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="个人评分">
+            <el-input-number
+              v-model="form.personalRating"
+              :min="0"
+              :max="10"
+              :step="0.5"
+              controls-position="right"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="标签">
+            <el-input
+              v-model="form.tags"
+              placeholder="多个标签使用逗号分隔"
+            />
+          </el-form-item>
+
+          <el-form-item label="评价">
+            <el-input
+              v-model="form.comment"
+              type="textarea"
+              :rows="3"
+              placeholder="说点什么吧"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <AnimatedButton variant="secondary" @click="dialogVisible = false">
+            取消
+          </AnimatedButton>
+          <AnimatedButton
+            variant="primary"
+            :loading="submitLoading"
+            @click="handleSubmit"
+          >
+            确认
+          </AnimatedButton>
+        </span>
+      </template>
+    </el-dialog>
 
     <!-- 照片上传对话框 -->
     <el-dialog
@@ -323,7 +464,7 @@
     <!-- 全部照片对话框 -->
     <el-dialog
       v-model="allPhotosDialogVisible"
-      :title="`${allPhotosTravel?.location || ''} - 全部照片 (${allPhotosList.length})`"
+      :title="`${allPhotosTravel?.name || ''} - 全部照片 (${allPhotosList.length})`"
       width="90%"
       :close-on-click-modal="true"
       class="all-photos-dialog"
@@ -402,10 +543,12 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Location, StarFilled, Search, ChatLineRound, Picture, Upload, Delete } from '@element-plus/icons-vue'
-import { uploadPhoto, getPhotoList, deletePhoto, linkPhotoToTravel } from '@/api/photo'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Plus, Location, StarFilled, Search, ChatLineRound, Picture, Upload, Delete, UploadFilled } from '@element-plus/icons-vue'
+import { getTravelPage, createTravel, getTravelDetail, deleteTravelRecord, updateTravelRecord, updateTravelPlace } from '@/api/travel'
+import { batchUploadPhotos, getPhotoPage, deletePhoto, uploadCoverImage } from '@/api/photo'
 import type { Photo } from '@/api/photo'
+import type { TravelPageItem } from '@/types/api'
 import AnimatedButton from '@/components/uiverse/AnimatedButton.vue'
 import AnimatedCard from '@/components/uiverse/AnimatedCard.vue'
 import EmptyState from '@/components/uiverse/EmptyState.vue'
@@ -416,193 +559,64 @@ import AnimatedTag from '@/components/uiverse/AnimatedTag.vue'
 const router = useRouter()
 
 const loading = ref(false)
-const travelList = ref<any[]>([])
+const travelList = ref<TravelPageItem[]>([])
 const total = ref(0)
 const pageNo = ref(1)
 const pageSize = ref(8)
-const filterTag = ref<string | 'all'>('all')
+const filterStatus = ref<number | 'all'>('all')
 const keyword = ref('')
+const statusCounts = ref<Record<number, number>>({})
 
-const tagOptions = [
+const statusOptions = [
   { label: '全部', value: 'all' as const },
-  { label: '国内', value: '国内' },
-  { label: '国外', value: '国外' },
-  { label: '自然风光', value: '自然风光' },
-  { label: '历史文化', value: '历史文化' },
-  { label: '城市', value: '城市' },
+  { label: '想去', value: 1 },
+  { label: '计划中', value: 2 },
+  { label: '已去', value: 3 },
 ]
 
 const imageErrorMap = reactive<Record<number, boolean>>({})
 
-// 假数据 - 使用更可靠的图片URL
-const mockTravels = [
-  {
-    id: 1,
-    location: '北京',
-    country: '中国',
-    imageUrl: 'https://picsum.photos/800/600?random=1',
-    travelDate: '2025-01-10',
-    rating: 9.0,
-    tags: '国内,历史文化,城市',
-    comment: '故宫和天坛都太震撼了，感受到了深厚的历史底蕴。',
-    photos: [
-      { id: 101, title: '故宫', filePath: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=300&h=300&fit=crop' },
-      { id: 102, title: '天坛', filePath: 'https://images.unsplash.com/photo-1555993539-0c0c0c0c0c0?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1555993539-0c0c0c0c0c0?w=300&h=300&fit=crop' },
-      { id: 103, title: '天安门', filePath: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=300&h=300&fit=crop' },
-      { id: 104, title: '颐和园', filePath: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 2,
-    location: '杭州西湖',
-    country: '中国',
-    imageUrl: 'https://picsum.photos/800/600?random=2',
-    travelDate: '2024-12-25',
-    rating: 9.5,
-    tags: '国内,自然风光,城市',
-    comment: '西湖的美景让人流连忘返，特别是断桥残雪。',
-    photos: [
-      { id: 201, title: '断桥残雪', filePath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop' },
-      { id: 202, title: '三潭印月', filePath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop' },
-      { id: 203, title: '雷峰塔', filePath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 3,
-    location: '日本京都',
-    country: '日本',
-    imageUrl: 'https://picsum.photos/800/600?random=3',
-    travelDate: '2024-11-15',
-    rating: 9.8,
-    tags: '国外,历史文化,城市',
-    comment: '京都的古建筑和樱花季真的太美了，文化氛围浓厚。',
-    photos: [
-      { id: 301, title: '清水寺', filePath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=300&h=300&fit=crop' },
-      { id: 302, title: '金阁寺', filePath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=300&h=300&fit=crop' },
-      { id: 303, title: '樱花', filePath: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=300&h=300&fit=crop' },
-      { id: 304, title: '伏见稻荷大社', filePath: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=300&h=300&fit=crop' },
-      { id: 305, title: '岚山', filePath: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&h=300&fit=crop' },
-      { id: 306, title: '祗园', filePath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=300&h=300&fit=crop' },
-      { id: 307, title: '二条城', filePath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=300&h=300&fit=crop' },
-      { id: 308, title: '银阁寺', filePath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop' },
-      { id: 309, title: '哲学之道', filePath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop' },
-      { id: 310, title: '八坂神社', filePath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=300&h=300&fit=crop' },
-      { id: 311, title: '鸭川', filePath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=300&h=300&fit=crop' },
-      { id: 312, title: '京都塔', filePath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=300&h=300&fit=crop' },
-      { id: 313, title: '花见小路', filePath: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=300&h=300&fit=crop' },
-      { id: 314, title: '三十三间堂', filePath: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 4,
-    location: '西藏拉萨',
-    country: '中国',
-    imageUrl: 'https://picsum.photos/800/600?random=4',
-    travelDate: '2024-10-01',
-    rating: 9.2,
-    tags: '国内,自然风光,历史文化',
-    comment: '布达拉宫的庄严和纳木错的纯净让人心灵震撼。',
-    photos: [
-      { id: 401, title: '布达拉宫', filePath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=300&h=300&fit=crop' },
-      { id: 402, title: '纳木错', filePath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 5,
-    location: '巴黎',
-    country: '法国',
-    imageUrl: 'https://picsum.photos/800/600?random=5',
-    travelDate: '2024-09-20',
-    rating: 9.3,
-    tags: '国外,历史文化,城市',
-    comment: '埃菲尔铁塔和卢浮宫都是必去的地方，艺术之都名不虚传。',
-    photos: [
-      { id: 501, title: '埃菲尔铁塔', filePath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=300&h=300&fit=crop' },
-      { id: 502, title: '卢浮宫', filePath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop' },
-      { id: 503, title: '塞纳河', filePath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 6,
-    location: '云南大理',
-    country: '中国',
-    imageUrl: 'https://picsum.photos/800/600?random=6',
-    travelDate: '2024-08-15',
-    rating: 9.0,
-    tags: '国内,自然风光',
-    comment: '苍山洱海的美景让人心旷神怡，是一个放松身心的好地方。',
-    photos: [
-      { id: 601, title: '洱海', filePath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop' },
-      { id: 602, title: '苍山', filePath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1464822759844-d150ad6d0f78?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 7,
-    location: '冰岛',
-    country: '冰岛',
-    imageUrl: 'https://picsum.photos/800/600?random=7',
-    travelDate: '2024-07-10',
-    rating: 9.5,
-    tags: '国外,自然风光',
-    comment: '极光和蓝湖温泉是此生难忘的体验，大自然的鬼斧神工。',
-    photos: [
-      { id: 701, title: '极光', filePath: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=300&h=300&fit=crop' },
-      { id: 702, title: '蓝湖温泉', filePath: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&h=300&fit=crop' },
-      { id: 703, title: '黄金瀑布', filePath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 8,
-    location: '成都',
-    country: '中国',
-    imageUrl: 'https://picsum.photos/800/600?random=8',
-    travelDate: '2024-06-20',
-    rating: 8.8,
-    tags: '国内,城市',
-    comment: '美食之都，火锅和串串都太棒了，还有大熊猫基地。',
-    photos: [
-      { id: 801, title: '大熊猫基地', filePath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-]
-
-function loadTravels() {
-  loading.value = true
-  setTimeout(() => {
-    let filtered = [...mockTravels]
-    
-    // 标签筛选
-    if (filterTag.value !== 'all') {
-      filtered = filtered.filter(travel => 
-        travel.tags && travel.tags.includes(filterTag.value)
-      )
+async function loadTravels() {
+  try {
+    loading.value = true
+    const params: any = {
+      pageNo: pageNo.value,
+      pageSize: pageSize.value,
+      keyword: keyword.value || undefined,
     }
-    
-    // 关键词搜索
-    if (keyword.value) {
-      const kw = keyword.value.toLowerCase()
-      filtered = filtered.filter(travel => 
-        travel.location.toLowerCase().includes(kw) || 
-        (travel.country && travel.country.toLowerCase().includes(kw))
-      )
+    if (filterStatus.value !== 'all') {
+      params.status = filterStatus.value
     }
-    
-    // 计算总数
-    total.value = filtered.length
-    
-    // 分页
-    const start = (pageNo.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    travelList.value = filtered.slice(start, end)
-    
+    const res = await getTravelPage(params)
+    travelList.value = res.data.page?.list || []
+    total.value = res.data.page?.total || 0
+    statusCounts.value = res.data.statusCounts || {}
+  } catch (e) {
+    // 错误在 request 拦截器中已统一提示
+  } finally {
     loading.value = false
-  }, 300)
+  }
 }
 
-function changeTag(value: string | 'all') {
-  filterTag.value = value
+function changeStatus(value: number | 'all') {
+  filterStatus.value = value
   pageNo.value = 1
   loadTravels()
+}
+
+function getStatusLabel(status: number) {
+  const map: Record<number, string> = {
+    1: '想去',
+    2: '计划中',
+    3: '已去',
+  }
+  return map[status] || '-'
+}
+
+function formatDate(dateStr?: string) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('zh-CN')
 }
 
 function handleSearch() {
@@ -614,38 +628,245 @@ function handleImageError(travelId: number) {
   imageErrorMap[travelId] = true
 }
 
-function goDetail(travelId?: number) {
-  if (!travelId) {
-    // 暂时不实现详情页
-    ElMessage.info('详情页开发中...')
+function goDetail(placeId?: number) {
+  if (!placeId) {
+    ElMessage.info('请选择有效的地点')
     return
   }
-  router.push(`/travel/${travelId}`)
+  router.push(`/travel/${placeId}`)
 }
 
-function handleCardClick(event: MouseEvent, travel: any) {
+function handleCardClick(event: MouseEvent, travel: TravelPageItem) {
   // 如果点击的是按钮或链接，不触发卡片点击
   const target = event.target as HTMLElement
   if (target.closest('button') || target.closest('a') || target.closest('.action-btn') || target.closest('.el-popconfirm')) {
     return
   }
-  goDetail(travel.id)
+  goDetail(travel.placeId)
+}
+
+// ========== 新建 / 编辑表单 ==========
+type DialogMode = 'create' | 'edit'
+
+const dialogVisible = ref(false)
+const dialogMode = ref<DialogMode>('create')
+const formRef = ref<FormInstance>()
+
+const form = reactive<{
+  recordId?: number
+  placeId?: number
+  name: string
+  country?: string
+  city?: string
+  address?: string
+  latitude?: number
+  longitude?: number
+  placeType?: number
+  description?: string
+  coverUrl?: string
+  travelStatus?: number
+  personalRating?: number
+  travelDate?: string
+  travelDuration?: number
+  expense?: number
+  tags?: string
+  comment?: string
+}>({
+  name: '',
+})
+
+const rules: FormRules = {
+  name: [{ required: true, message: '请输入地点名称', trigger: 'blur' }],
+}
+
+function resetForm() {
+  form.recordId = undefined
+  form.placeId = undefined
+  form.name = ''
+  form.country = ''
+  form.city = ''
+  form.address = ''
+  form.latitude = undefined
+  form.longitude = undefined
+  form.placeType = undefined
+  form.description = ''
+  form.coverUrl = ''
+  form.travelStatus = 1
+  form.personalRating = undefined
+  form.travelDate = ''
+  form.travelDuration = undefined
+  form.expense = undefined
+  form.tags = ''
+  form.comment = ''
 }
 
 function openCreateDialog() {
-  ElMessage.info('添加功能开发中...')
+  dialogMode.value = 'create'
+  resetForm()
+  dialogVisible.value = true
 }
 
-function openEditDialog() {
-  ElMessage.info('编辑功能开发中...')
+async function openEditDialog(item: TravelPageItem) {
+  dialogMode.value = 'edit'
+  form.recordId = item.recordId
+  form.placeId = item.placeId
+  
+  // 先设置列表返回的基本信息
+  form.name = item.name
+  form.country = item.country
+  form.city = item.city
+  form.coverUrl = item.coverUrl
+  form.travelStatus = item.travelStatus
+  form.personalRating = item.personalRating
+  form.travelDate = item.travelDate
+  form.travelDuration = item.travelDuration
+  form.expense = item.expense
+  form.comment = item.comment || ''
+  
+  // 获取详情以填充 address、description、placeType 等字段
+  try {
+    const res = await getTravelDetail(item.placeId)
+    if (res.data?.place) {
+      form.address = res.data.place.address || ''
+      form.description = res.data.place.description || ''
+      form.placeType = res.data.place.placeType
+      form.latitude = res.data.place.latitude
+      form.longitude = res.data.place.longitude
+    }
+    if (res.data?.record) {
+      form.tags = res.data.record.tags || ''
+      form.comment = res.data.record.comment || ''
+    }
+  } catch (e) {
+    // 如果获取详情失败，至少保证基本字段已设置
+    form.address = ''
+    form.description = ''
+  }
+  
+  dialogVisible.value = true
 }
 
-function handleDelete(id: number) {
-  const index = mockTravels.findIndex(t => t.id === id)
-  if (index > -1) {
-    mockTravels.splice(index, 1)
+const submitLoading = ref(false)
+const coverUploading = ref(false)
+
+// 封面上传处理
+const MAX_COVER_SIZE = 50 * 1024 * 1024 // 50MB
+
+const beforeCoverUpload = (file: File) => {
+  // 检查文件大小
+  if (file.size > MAX_COVER_SIZE) {
+    ElMessage.error(`文件大小超过50MB，请选择较小的文件`)
+    return false
+  }
+  
+  // 检查文件类型
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+  if (!validTypes.includes(file.type)) {
+    ElMessage.error(`文件格式不支持，请选择 jpg、png、gif 或 webp 格式的图片`)
+    return false
+  }
+  
+  return true
+}
+
+const handleCoverUpload = async (options: any) => {
+  const { file } = options
+  coverUploading.value = true
+  try {
+    const res = await uploadCoverImage(file)
+    if (res.code === 0 && res.data) {
+      form.coverUrl = res.data
+      ElMessage.success('封面上传成功')
+    } else {
+      ElMessage.error(res.msg || '封面上传失败')
+    }
+  } catch (error: any) {
+    console.error('封面上传失败:', error)
+    ElMessage.error(error.message || '封面上传失败')
+  } finally {
+    coverUploading.value = false
+  }
+}
+
+const handleCoverUploadSuccess = () => {
+  // 成功处理已在 handleCoverUpload 中完成
+}
+
+const handleCoverUploadError = () => {
+  ElMessage.error('封面上传失败')
+  coverUploading.value = false
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  await formRef.value.validate()
+
+  try {
+    submitLoading.value = true
+    if (dialogMode.value === 'create') {
+      await createTravel({
+        name: form.name,
+        country: form.country,
+        city: form.city,
+        address: form.address,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        placeType: form.placeType,
+        description: form.description,
+        coverUrl: form.coverUrl,
+        travelStatus: form.travelStatus,
+        personalRating: form.personalRating,
+        travelDate: form.travelDate,
+        travelDuration: form.travelDuration,
+        expense: form.expense,
+        tags: form.tags,
+        comment: form.comment,
+      })
+      ElMessage.success('创建成功')
+    } else if (dialogMode.value === 'edit' && form.recordId && form.placeId) {
+      // 编辑时同时更新地点信息和记录信息
+      await Promise.all([
+        // 更新地点信息
+        updateTravelPlace(form.placeId, {
+          name: form.name,
+          country: form.country,
+          city: form.city,
+          address: form.address,
+          latitude: form.latitude,
+          longitude: form.longitude,
+          placeType: form.placeType,
+          description: form.description,
+          coverUrl: form.coverUrl,
+        }),
+        // 更新旅游记录
+        updateTravelRecord(form.recordId, {
+          id: form.recordId,
+          travelStatus: form.travelStatus,
+          personalRating: form.personalRating,
+          travelDate: form.travelDate,
+          travelDuration: form.travelDuration,
+          expense: form.expense,
+          comment: form.comment,
+        }),
+      ])
+      ElMessage.success('更新成功')
+    }
+    dialogVisible.value = false
     loadTravels()
+  } catch (e) {
+    // 已统一处理
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDelete(recordId: number) {
+  try {
+    await deleteTravelRecord(recordId)
     ElMessage.success('删除成功')
+    loadTravels()
+  } catch (e) {
+    // 错误在 request 拦截器中已统一提示
   }
 }
 
@@ -673,41 +894,10 @@ async function handlePhotoUpload() {
 
   try {
     uploading.value = true
-    const travel = mockTravels.find(t => t.id === currentTravelId.value)
-    if (!travel) return
-
-    // 模拟上传照片
-    const uploadPromises = uploadFileList.value.map((uploadFile) => {
-      return new Promise<void>((resolve) => {
-        const file = uploadFile.raw || uploadFile
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          const photo: Photo = {
-            id: Date.now() + Math.random(),
-            title: file.name,
-            filePath: e.target?.result as string,
-            thumbnailPath: e.target?.result as string,
-          }
-          if (!travel.photos) {
-            travel.photos = []
-          }
-          travel.photos.push(photo)
-          resolve()
-        }
-        reader.readAsDataURL(file)
-      })
+    const files = uploadFileList.value.map(uploadFile => uploadFile.raw || uploadFile).filter(Boolean) as File[]
+    await batchUploadPhotos(files, {
+      travelRecordId: currentTravelId.value,
     })
-
-    await Promise.all(uploadPromises)
-
-    // 实际项目中应该调用API
-    // const formData = new FormData()
-    // uploadFileList.value.forEach(uploadFile => {
-    //   const file = uploadFile.raw || uploadFile
-    //   formData.append('files', file)
-    // })
-    // formData.append('travelRecordId', currentTravelId.value.toString())
-    // await uploadPhoto(formData)
 
     ElMessage.success('照片上传成功')
     photoUploadDialogVisible.value = false
@@ -731,24 +921,22 @@ const allPhotosList = ref<Photo[]>([])
 const allPhotosTravel = ref<any>(null)
 
 function previewPhoto(photo: Photo) {
-  // 找到包含这张照片的旅游记录
-  const travel = travelList.value.find(tr => tr.photos?.some((p: Photo) => p.id === photo.id))
-  if (!travel || !travel.photos) return
-
-  // 找到当前照片在列表中的索引
-  const currentIndex = travel.photos.findIndex(p => p.id === photo.id)
-  if (currentIndex === -1) return
-
-  // 构建预览图片列表
-  previewPhotoList.value = travel.photos.map(p => p.filePath)
-  previewIndex.value = currentIndex
+  // TODO: 照片预览功能需要从API获取照片列表
+  // 目前TravelPageItem中没有photos字段，需要单独调用API获取
+  previewPhotoList.value = [photo.filePath]
+  previewIndex.value = 0
   photoPreviewVisible.value = true
 }
 
-function openAllPhotosDialog(travel: any) {
+function openAllPhotosDialog(travel: TravelPageItem) {
   allPhotosTravel.value = travel
-  allPhotosList.value = travel.photos || []
+  // 注意：TravelPageItem中没有photos字段，需要从API获取
+  allPhotosList.value = []
   allPhotosDialogVisible.value = true
+  // TODO: 调用API获取该旅游记录关联的照片
+  // getPhotoList({ travelRecordId: travel.recordId }).then(res => {
+  //   allPhotosList.value = res.data.list || []
+  // })
 }
 
 function previewPhotoFromAll(photo: Photo) {
@@ -759,24 +947,19 @@ function previewPhotoFromAll(photo: Photo) {
   photoPreviewVisible.value = true
 }
 
-function handleDeletePhoto(travelId: number, photoId: number) {
-  ElMessageBox.confirm('确定删除这张照片吗？', '提示', {
+async function handleDeletePhoto(travelId: number, photoId: number) {
+  try {
+    await ElMessageBox.confirm('确定删除这张照片吗？', '提示', {
     confirmButtonText: '删除',
     cancelButtonText: '取消',
     type: 'warning',
-  }).then(async () => {
-    const travel = mockTravels.find(t => t.id === travelId)
-    if (travel && travel.photos) {
-      const index = travel.photos.findIndex(p => p.id === photoId)
-      if (index > -1) {
-        travel.photos.splice(index, 1)
-        loadTravels()
+    })
+    await deletePhoto(photoId)
         ElMessage.success('删除成功')
+    loadTravels()
+  } catch (e) {
+    // 用户取消或删除失败
       }
-    }
-    // 实际项目中应该调用API
-    // await deletePhoto(photoId)
-  }).catch(() => {})
 }
 
 onMounted(() => {

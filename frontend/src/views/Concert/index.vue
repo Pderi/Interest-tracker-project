@@ -13,13 +13,22 @@
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap gap-2 w-full">
           <AnimatedButton
-            v-for="tag in tagOptions"
-            :key="tag.value"
-            :variant="filterTag === tag.value ? 'primary' : 'secondary'"
+            v-for="status in statusOptions"
+            :key="status.value"
+            :variant="filterStatus === status.value ? 'primary' : 'secondary'"
             size="small"
-            @click="changeTag(tag.value)"
+            @click="changeStatus(status.value)"
           >
-            {{ tag.label }}
+            <span>{{ status.label }}</span>
+            <span
+              v-if="status.value !== 'all' && statusCounts[status.value]"
+              class="ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium"
+              :class="filterStatus === status.value 
+                ? 'bg-white/20 text-white' 
+                : 'bg-white/10 text-gray-300'"
+            >
+              {{ statusCounts[status.value] }}
+            </span>
           </AnimatedButton>
         </div>
         <AnimatedSearch
@@ -62,7 +71,7 @@
       >
         <template
           v-for="(concert, index) in concertList"
-          :key="concert.id"
+          :key="concert.recordId"
         >
           <div class="flex flex-col gap-2 concert-card-wrapper" :style="{ animationDelay: `${index * 50}ms` }">
             <!-- 演唱会卡片 -->
@@ -73,15 +82,15 @@
             >
               <div class="rounded-2xl overflow-hidden">
                 <!-- 图片 -->
-                <div class="relative aspect-[4/3] overflow-hidden concert-poster-container">
+                <div class="relative aspect-[2/3] overflow-hidden concert-poster-container">
                   <div class="poster-overlay"></div>
                   <img
-                    v-if="concert.imageUrl && !imageErrorMap[concert.id]"
-                    :src="concert.imageUrl"
+                    v-if="concert.posterUrl && !imageErrorMap[concert.concertId]"
+                    :src="concert.posterUrl"
                     :alt="concert.artist"
-                    class="concert-poster w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  class="concert-poster w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 bg-[#0b162b]"
                     loading="lazy"
-                    @error="handleImageError(concert.id)"
+                    @error="handleImageError(concert.concertId)"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00d4ff]/20 to-[#00ffcc]/10 poster-placeholder">
                     <el-icon :size="48" class="text-[#c3cfe2]/40">
@@ -91,36 +100,27 @@
 
                   <!-- 评分 -->
                   <div
-                    v-if="concert.rating != null"
+                    v-if="concert.personalRating != null"
                     class="rating-badge absolute bottom-3 left-3 flex items-center space-x-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"
                   >
                     <el-icon class="text-yellow-400 rating-star"><StarFilled /></el-icon>
-                    <span class="text-white text-sm font-semibold rating-value">{{ concert.rating }}</span>
+                    <span class="text-white text-sm font-semibold rating-value">{{ concert.personalRating }}</span>
                   </div>
                 </div>
 
                 <!-- 信息 -->
                 <div class="p-4 flex flex-col gap-2 glass-effect">
                   <h3 class="text-lg font-semibold text-white line-clamp-1">{{ concert.artist }}</h3>
-                  <p class="text-sm text-[#00d4ff]/80 line-clamp-1">{{ concert.venue }}</p>
+                  <p class="text-sm text-[#00d4ff]/80 line-clamp-1">{{ concert.title || concert.venue }}</p>
                   <p class="text-xs text-gray-400">
                     <span v-if="concert.city">{{ concert.city }}</span>
-                    <span v-if="concert.concertDate"> · {{ concert.concertDate }}</span>
+                    <span v-if="concert.concertDate"> · {{ formatDate(concert.concertDate) }}</span>
                   </p>
 
-                  <!-- 标签 -->
-                  <div
-                    v-if="concert.tags"
-                    class="flex flex-wrap gap-2 mt-1 concert-tags"
-                  >
-                    <AnimatedTag
-                      v-for="(tag, tagIndex) in concert.tags.split(',')"
-                      :key="tag"
-                      variant="glow"
-                      :animated="tagIndex % 2 === 0"
-                      class="concert-tag-item"
-                    >
-                      {{ tag }}
+                  <!-- 状态标签 -->
+                  <div class="flex flex-wrap gap-2 mt-1">
+                    <AnimatedTag variant="glow" class="concert-tag-item">
+                      {{ getStatusLabel(concert.watchStatus) }}
                     </AnimatedTag>
                   </div>
 
@@ -128,84 +128,37 @@
                     <AnimatedButton
                       variant="outline"
                       size="small"
-                      @click.stop="openEditDialog()"
+                      @click.stop="openEditDialog(concert)"
                       class="action-btn edit-btn"
                     >
                       编辑
                     </AnimatedButton>
-                    <el-popconfirm
-                      title="确定删除该记录？"
-                      confirm-button-text="删除"
-                      cancel-button-text="取消"
-                      confirm-button-type="danger"
-                      @confirm="handleDelete(concert.id)"
-                    >
-                      <template #reference>
-                        <button
-                          @click.stop
-                          class="action-btn delete-btn"
-                        >
-                          删除
-                        </button>
-                      </template>
-                    </el-popconfirm>
-                  </div>
-                </div>
-              </div>
-            </AnimatedCard>
-
-            <!-- 照片展示区域 -->
-            <AnimatedCard
-              v-if="concert.photos && concert.photos.length > 0"
-              variant="glass"
-              class="photo-gallery-card"
-            >
-              <div class="p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    <el-icon class="text-[#00d4ff]/60">
-                      <Picture />
-                    </el-icon>
-                    <span class="text-sm text-gray-300">照片 ({{ concert.photos.length }})</span>
-                  </div>
-                  <div class="flex gap-2">
-                    <el-button
-                      v-if="concert.photos.length > 6"
-                      text
-                      size="small"
-                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
-                      @click="openAllPhotosDialog(concert)"
-                    >
-                      查看全部
-                    </el-button>
-                    <el-button
-                      text
-                      size="small"
-                      class="!text-[#00d4ff] hover:!text-[#00ffcc]"
-                      @click="openPhotoUploadDialog(concert.id)"
-                    >
-                      添加照片
-                    </el-button>
-                  </div>
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                  <div
-                    v-for="photo in concert.photos.slice(0, 6)"
-                    :key="photo.id"
-                    class="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
-                    @click="previewPhoto(photo)"
-                  >
-                    <img
-                      :src="photo.thumbnailPath || photo.filePath"
-                      :alt="photo.title"
-                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    <div
-                      v-if="concert.photos.length > 6 && photo === concert.photos[5]"
-                      class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-semibold cursor-pointer hover:bg-black/70 transition-colors"
-                      @click.stop="openAllPhotosDialog(concert)"
-                    >
-                      +{{ concert.photos.length - 6 }}
+                    <div class="flex gap-2">
+                      <AnimatedButton
+                        variant="outline"
+                        size="small"
+                        @click.stop="openPhotoUploadDialog(concert.recordId)"
+                        class="action-btn photo-btn"
+                      >
+                        <el-icon><Picture /></el-icon>
+                        照片
+                      </AnimatedButton>
+                      <el-popconfirm
+                        title="确定删除该记录？"
+                        confirm-button-text="删除"
+                        cancel-button-text="取消"
+                        confirm-button-type="danger"
+                        @confirm="handleDelete(concert.recordId)"
+                      >
+                        <template #reference>
+                          <button
+                            @click.stop
+                            class="action-btn delete-btn"
+                          >
+                            删除
+                          </button>
+                        </template>
+                      </el-popconfirm>
                     </div>
                   </div>
                 </div>
@@ -252,6 +205,207 @@
         />
       </div>
     </div>
+
+    <!-- 新建 / 编辑弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? '添加演唱会记录' : '编辑演唱会记录'"
+      width="600px"
+      destroy-on-close
+      class="concert-dialog"
+    >
+      <div class="concert-form-wrapper glass-effect">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-width="100px"
+          class="concert-form"
+        >
+          <el-form-item
+            label="艺人"
+            prop="artist"
+          >
+            <el-input
+              v-model="form.artist"
+              placeholder="请输入艺人名称"
+            />
+          </el-form-item>
+
+          <el-form-item label="演唱会标题">
+            <el-input
+              v-model="form.title"
+              placeholder="请输入演唱会标题"
+            />
+          </el-form-item>
+
+          <el-form-item label="演出日期">
+            <el-date-picker
+              v-model="form.concertDate"
+              type="datetime"
+              placeholder="选择日期和时间"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="演出场馆">
+            <el-input
+              v-model="form.venue"
+              placeholder="请输入演出场馆"
+            />
+          </el-form-item>
+
+          <el-form-item label="城市">
+            <el-input
+              v-model="form.city"
+              placeholder="请输入城市"
+            />
+          </el-form-item>
+
+          <el-form-item label="国家">
+            <el-input
+              v-model="form.country"
+              placeholder="请输入国家"
+            />
+          </el-form-item>
+
+          <el-form-item label="类型">
+            <el-select v-model="form.concertType" placeholder="请选择类型" class="w-full">
+              <el-option :value="1" label="演唱会" />
+              <el-option :value="2" label="音乐节" />
+              <el-option :value="3" label="演出" />
+              <el-option :value="4" label="其他" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="海报">
+            <div class="w-full">
+              <el-upload
+                :auto-upload="true"
+                :on-success="handleCoverUploadSuccess"
+                :on-error="handleCoverUploadError"
+                :before-upload="beforeCoverUpload"
+                :show-file-list="false"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                :http-request="handleCoverUpload"
+                class="cover-upload"
+              >
+                <template #trigger>
+                  <el-button type="primary" :loading="coverUploading">
+                    <el-icon><UploadFilled /></el-icon>
+                    选择海报
+                  </el-button>
+                </template>
+              </el-upload>
+              <div
+                v-if="form.posterUrl"
+                class="cover-preview mt-3"
+              >
+                <img
+                  :src="form.posterUrl"
+                  alt="poster preview"
+                />
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  class="remove-cover-btn"
+                  @click="form.posterUrl = ''"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="简介">
+            <el-input
+              v-model="form.description"
+              type="textarea"
+              :rows="2"
+              placeholder="演唱会简介"
+            />
+          </el-form-item>
+
+          <el-form-item label="状态">
+            <el-select v-model="form.watchStatus" placeholder="请选择状态" class="w-full">
+              <el-option :value="1" label="想看" />
+              <el-option :value="2" label="已看" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="观看日期">
+            <el-date-picker
+              v-model="form.watchDate"
+              type="date"
+              placeholder="选择日期"
+              value-format="YYYY-MM-DD"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="票价(元)">
+            <el-input-number
+              v-model="form.ticketPrice"
+              :min="0"
+              :precision="2"
+              placeholder="票价"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="座位信息">
+            <el-input
+              v-model="form.seatInfo"
+              placeholder="例如：VIP区 A排 1号"
+            />
+          </el-form-item>
+
+          <el-form-item label="个人评分">
+            <el-input-number
+              v-model="form.personalRating"
+              :min="0"
+              :max="10"
+              :step="0.5"
+              controls-position="right"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="标签">
+            <el-input
+              v-model="form.tags"
+              placeholder="多个标签使用逗号分隔"
+            />
+          </el-form-item>
+
+          <el-form-item label="评价">
+            <el-input
+              v-model="form.comment"
+              type="textarea"
+              :rows="3"
+              placeholder="说点什么吧"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <AnimatedButton variant="secondary" @click="dialogVisible = false">
+            取消
+          </AnimatedButton>
+          <AnimatedButton
+            variant="primary"
+            :loading="submitLoading"
+            @click="handleSubmit"
+          >
+            确认
+          </AnimatedButton>
+        </span>
+      </template>
+    </el-dialog>
 
     <!-- 照片上传对话框 -->
     <el-dialog
@@ -320,93 +474,17 @@
         </el-button>
       </template>
     </el-dialog>
-
-    <!-- 全部照片对话框 -->
-    <el-dialog
-      v-model="allPhotosDialogVisible"
-      :title="`${allPhotosConcert?.artist || ''} - 全部照片 (${allPhotosList.length})`"
-      width="90%"
-      :close-on-click-modal="true"
-      class="all-photos-dialog"
-    >
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 max-h-[70vh] overflow-y-auto">
-        <div
-          v-for="photo in allPhotosList"
-          :key="photo.id"
-          class="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
-          @click="previewPhotoFromAll(photo)"
-        >
-          <img
-            :src="photo.thumbnailPath || photo.filePath"
-            :alt="photo.title"
-            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-          />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-            <div class="absolute bottom-2 left-2 right-2">
-              <p class="text-white text-xs truncate">{{ photo.title }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="flex justify-end">
-          <el-button @click="allPhotosDialogVisible = false">关闭</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
-    <!-- 照片预览对话框 -->
-    <el-dialog
-      v-model="photoPreviewVisible"
-      title="照片预览"
-      width="90%"
-      :close-on-click-modal="true"
-      class="photo-preview-dialog"
-    >
-      <div class="relative w-full" style="min-height: 60vh;">
-        <el-image
-          :src="previewPhotoList[previewIndex]"
-          fit="contain"
-          class="w-full"
-          style="max-height: 70vh;"
-          :preview-src-list="previewPhotoList"
-          :initial-index="previewIndex"
-          :preview-teleported="true"
-        />
-      </div>
-      <template #footer>
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-gray-400">
-            {{ previewIndex + 1 }} / {{ previewPhotoList.length }}
-          </div>
-          <div class="flex gap-2">
-            <el-button
-              :disabled="previewIndex === 0"
-              @click="previewIndex = Math.max(0, previewIndex - 1)"
-            >
-              上一张
-            </el-button>
-            <el-button
-              :disabled="previewIndex === previewPhotoList.length - 1"
-              @click="previewIndex = Math.min(previewPhotoList.length - 1, previewIndex + 1)"
-            >
-              下一张
-            </el-button>
-            <el-button @click="photoPreviewVisible = false">关闭</el-button>
-          </div>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete } from '@element-plus/icons-vue'
-import { uploadPhoto, getPhotoList, deletePhoto, linkPhotoToConcert } from '@/api/photo'
-import type { Photo } from '@/api/photo'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete, UploadFilled } from '@element-plus/icons-vue'
+import { getConcertPage, createConcert, getConcertDetail, deleteConcertRecord, updateConcertRecord, updateConcert } from '@/api/concert'
+import { uploadCoverImage, batchUploadPhotos } from '@/api/photo'
+import type { ConcertPageItem } from '@/types/api'
 import AnimatedButton from '@/components/uiverse/AnimatedButton.vue'
 import AnimatedCard from '@/components/uiverse/AnimatedCard.vue'
 import EmptyState from '@/components/uiverse/EmptyState.vue'
@@ -417,199 +495,62 @@ import AnimatedTag from '@/components/uiverse/AnimatedTag.vue'
 const router = useRouter()
 
 const loading = ref(false)
-const concertList = ref<any[]>([])
+const concertList = ref<ConcertPageItem[]>([])
 const total = ref(0)
 const pageNo = ref(1)
 const pageSize = ref(8)
-const filterTag = ref<string | 'all'>('all')
+const filterStatus = ref<number | 'all'>('all')
 const keyword = ref('')
+const statusCounts = ref<Record<number, number>>({})
 
-const tagOptions = [
+const statusOptions = [
   { label: '全部', value: 'all' as const },
-  { label: '流行', value: '流行' },
-  { label: '摇滚', value: '摇滚' },
-  { label: '民谣', value: '民谣' },
-  { label: '电子', value: '电子' },
-  { label: '说唱', value: '说唱' },
+  { label: '想看', value: 1 },
+  { label: '已看', value: 2 },
 ]
 
 const imageErrorMap = reactive<Record<number, boolean>>({})
 
-// 假数据
-const mockConcerts = [
-  {
-    id: 1,
-    artist: '周杰伦',
-    venue: '北京鸟巢',
-    city: '北京',
-    concertDate: '2024-12-25',
-    rating: 9.5,
-    tags: '流行,华语',
-    comment: '现场氛围太棒了，经典歌曲一首接一首，全场大合唱！',
-    imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
-    photos: [
-      { id: 1001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 1002, title: '舞台全景', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 1003, title: '观众席', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 1004, title: '灯光秀', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 2,
-    artist: '五月天',
-    venue: '上海梅赛德斯奔驰文化中心',
-    city: '上海',
-    concertDate: '2024-11-20',
-    rating: 9.8,
-    tags: '摇滚,华语',
-    comment: '五月天的现场感染力太强了，三个小时完全不够！',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
-    photos: [
-      { id: 2001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 2002, title: '舞台', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 2003, title: '全场大合唱', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 3,
-    artist: 'Taylor Swift',
-    venue: 'Tokyo Dome',
-    city: '东京',
-    concertDate: '2024-10-15',
-    rating: 9.7,
-    tags: '流行,欧美',
-    comment: 'Taylor的舞台设计太震撼了，每一首歌都是视觉盛宴！',
-    imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
-    photos: [
-      { id: 3001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 3002, title: '舞台设计', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 3003, title: '烟花表演', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 3004, title: '观众互动', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 3005, title: '服装造型', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 3006, title: '开场表演', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 3007, title: '灯光秀', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 3008, title: 'Encore环节', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 3009, title: '全场大合唱', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 3010, title: '后台花絮', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 3011, title: '签名环节', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 3012, title: '结束合影', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 4,
-    artist: '李健',
-    venue: '深圳湾体育中心',
-    city: '深圳',
-    concertDate: '2024-09-10',
-    rating: 9.3,
-    tags: '民谣,华语',
-    comment: '李健的声音太治愈了，现场听《贝加尔湖畔》简直是一种享受。',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
-    photos: [
-      { id: 4001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 4002, title: '舞台', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 5,
-    artist: 'Coldplay',
-    venue: 'Singapore National Stadium',
-    city: '新加坡',
-    concertDate: '2024-08-05',
-    rating: 9.6,
-    tags: '摇滚,欧美',
-    comment: 'Coldplay的现场太震撼了，全场手环同步闪烁，美轮美奂！',
-    imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
-    photos: [
-      { id: 5001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 5002, title: '手环闪烁', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 5003, title: '舞台效果', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 6,
-    artist: '陈奕迅',
-    venue: '香港红磡体育馆',
-    city: '香港',
-    concertDate: '2024-07-20',
-    rating: 9.4,
-    tags: '流行,华语',
-    comment: 'Eason的演唱会总是那么精彩，每一首歌都唱到心里。',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
-    photos: [
-      { id: 6001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 7,
-    artist: 'Billie Eilish',
-    venue: '台北小巨蛋',
-    city: '台北',
-    concertDate: '2024-06-15',
-    rating: 9.2,
-    tags: '流行,电子,欧美',
-    comment: 'Billie的现场太有感染力了，年轻一代的偶像！',
-    imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
-    photos: [
-      { id: 7001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-      { id: 7002, title: '舞台设计', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-  {
-    id: 8,
-    artist: '朴树',
-    venue: '成都东郊记忆',
-    city: '成都',
-    concertDate: '2024-05-10',
-    rating: 9.0,
-    tags: '民谣,摇滚,华语',
-    comment: '朴树的现场很真实，没有太多花哨，就是纯粹的音乐。',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
-    photos: [
-      { id: 8001, title: '演唱会现场', filePath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop' },
-      { id: 8002, title: '舞台', filePath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop', thumbnailPath: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop' },
-    ] as Photo[],
-  },
-]
-
-function loadConcerts() {
-  loading.value = true
-  setTimeout(() => {
-    let filtered = [...mockConcerts]
-    
-    // 标签筛选
-    if (filterTag.value !== 'all') {
-      filtered = filtered.filter(concert => 
-        concert.tags && concert.tags.includes(filterTag.value)
-      )
+async function loadConcerts() {
+  try {
+    loading.value = true
+    const params: any = {
+      pageNo: pageNo.value,
+      pageSize: pageSize.value,
+      keyword: keyword.value || undefined,
     }
-    
-    // 关键词搜索
-    if (keyword.value) {
-      const kw = keyword.value.toLowerCase()
-      filtered = filtered.filter(concert => 
-        concert.artist.toLowerCase().includes(kw) || 
-        (concert.venue && concert.venue.toLowerCase().includes(kw)) ||
-        (concert.city && concert.city.toLowerCase().includes(kw))
-      )
+    if (filterStatus.value !== 'all') {
+      params.status = filterStatus.value
     }
-    
-    // 计算总数
-    total.value = filtered.length
-    
-    // 分页
-    const start = (pageNo.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    concertList.value = filtered.slice(start, end)
-    
+    const res = await getConcertPage(params)
+    concertList.value = res.data.page?.list || []
+    total.value = res.data.page?.total || 0
+    statusCounts.value = res.data.statusCounts || {}
+  } catch (e) {
+    // 错误在 request 拦截器中已统一提示
+  } finally {
     loading.value = false
-  }, 300)
+  }
 }
 
-function changeTag(value: string | 'all') {
-  filterTag.value = value
+function changeStatus(value: number | 'all') {
+  filterStatus.value = value
   pageNo.value = 1
   loadConcerts()
+}
+
+function getStatusLabel(status: number) {
+  const map: Record<number, string> = {
+    1: '想看',
+    2: '已看',
+  }
+  return map[status] || '-'
+}
+
+function formatDate(dateStr?: string) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('zh-CN')
 }
 
 function handleSearch() {
@@ -623,36 +564,242 @@ function handleImageError(id: number) {
 
 function goDetail(concertId?: number) {
   if (!concertId) {
-    // 暂时不实现详情页
     ElMessage.info('详情页开发中...')
     return
   }
   router.push(`/concert/${concertId}`)
 }
 
-function handleCardClick(event: MouseEvent, concert: any) {
+function handleCardClick(event: MouseEvent, concert: ConcertPageItem) {
   // 如果点击的是按钮或链接，不触发卡片点击
   const target = event.target as HTMLElement
   if (target.closest('button') || target.closest('a') || target.closest('.action-btn') || target.closest('.el-popconfirm')) {
     return
   }
-  goDetail(concert.id)
+  goDetail(concert.concertId)
+}
+
+// ========== 新建 / 编辑表单 ==========
+type DialogMode = 'create' | 'edit'
+
+const dialogVisible = ref(false)
+const dialogMode = ref<DialogMode>('create')
+const formRef = ref<FormInstance>()
+
+const form = reactive<{
+  recordId?: number
+  concertId?: number
+  artist: string
+  title?: string
+  concertDate?: string
+  venue?: string
+  city?: string
+  country?: string
+  concertType?: number
+  description?: string
+  posterUrl?: string
+  watchStatus?: number
+  personalRating?: number
+  watchDate?: string
+  ticketPrice?: number
+  seatInfo?: string
+  tags?: string
+  comment?: string
+}>({
+  artist: '',
+})
+
+const rules: FormRules = {
+  artist: [{ required: true, message: '请输入艺人名称', trigger: 'blur' }],
+}
+
+function resetForm() {
+  form.recordId = undefined
+  form.concertId = undefined
+  form.artist = ''
+  form.title = ''
+  form.concertDate = ''
+  form.venue = ''
+  form.city = ''
+  form.country = ''
+  form.concertType = undefined
+  form.description = ''
+  form.posterUrl = ''
+  form.watchStatus = 1
+  form.personalRating = undefined
+  form.watchDate = ''
+  form.ticketPrice = undefined
+  form.seatInfo = ''
+  form.tags = ''
+  form.comment = ''
 }
 
 function openCreateDialog() {
-  ElMessage.info('添加功能开发中...')
+  dialogMode.value = 'create'
+  resetForm()
+  dialogVisible.value = true
 }
 
-function openEditDialog() {
-  ElMessage.info('编辑功能开发中...')
+async function openEditDialog(item: ConcertPageItem) {
+  dialogMode.value = 'edit'
+  form.recordId = item.recordId
+  form.concertId = item.concertId
+  
+  // 先设置列表返回的基本信息
+  form.artist = item.artist
+  form.title = item.title
+  form.concertDate = item.concertDate
+  form.venue = item.venue
+  form.city = item.city
+  form.country = item.country
+  form.concertType = item.concertType
+  form.posterUrl = item.posterUrl
+  form.watchStatus = item.watchStatus
+  form.personalRating = item.personalRating
+  form.watchDate = item.watchDate
+  form.ticketPrice = item.ticketPrice
+  form.seatInfo = item.seatInfo
+  form.comment = item.comment || ''
+  
+  // 获取详情以填充 description、tags 等字段
+  try {
+    const res = await getConcertDetail(item.concertId)
+    if (res.data?.concert) {
+      form.description = res.data.concert.description || ''
+    }
+    if (res.data?.record) {
+      form.tags = res.data.record.tags || ''
+      form.comment = res.data.record.comment || ''
+    }
+  } catch (e) {
+    // 如果获取详情失败，至少保证基本字段已设置
+    form.description = ''
+  }
+  
+  dialogVisible.value = true
 }
 
-function handleDelete(id: number) {
-  const index = mockConcerts.findIndex(c => c.id === id)
-  if (index > -1) {
-    mockConcerts.splice(index, 1)
+const submitLoading = ref(false)
+const coverUploading = ref(false)
+
+// 封面上传处理
+const MAX_COVER_SIZE = 50 * 1024 * 1024 // 50MB
+
+const beforeCoverUpload = (file: File) => {
+  // 检查文件大小
+  if (file.size > MAX_COVER_SIZE) {
+    ElMessage.error(`文件大小超过50MB，请选择较小的文件`)
+    return false
+  }
+  
+  // 检查文件类型
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+  if (!validTypes.includes(file.type)) {
+    ElMessage.error(`文件格式不支持，请选择 jpg、png、gif 或 webp 格式的图片`)
+    return false
+  }
+  
+  return true
+}
+
+const handleCoverUpload = async (options: any) => {
+  const { file } = options
+  coverUploading.value = true
+  try {
+    const res = await uploadCoverImage(file)
+    if (res.code === 0 && res.data) {
+      form.posterUrl = res.data
+      ElMessage.success('海报上传成功')
+    } else {
+      ElMessage.error(res.msg || '海报上传失败')
+    }
+  } catch (error: any) {
+    console.error('海报上传失败:', error)
+    ElMessage.error(error.message || '海报上传失败')
+  } finally {
+    coverUploading.value = false
+  }
+}
+
+const handleCoverUploadSuccess = () => {
+  // 成功处理已在 handleCoverUpload 中完成
+}
+
+const handleCoverUploadError = () => {
+  ElMessage.error('海报上传失败')
+  coverUploading.value = false
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+  await formRef.value.validate()
+
+  try {
+    submitLoading.value = true
+    if (dialogMode.value === 'create') {
+      await createConcert({
+        artist: form.artist,
+        title: form.title,
+        concertDate: form.concertDate,
+        venue: form.venue,
+        city: form.city,
+        country: form.country,
+        concertType: form.concertType,
+        description: form.description,
+        posterUrl: form.posterUrl,
+        watchStatus: form.watchStatus,
+        personalRating: form.personalRating,
+        watchDate: form.watchDate,
+        ticketPrice: form.ticketPrice,
+        seatInfo: form.seatInfo,
+        tags: form.tags,
+        comment: form.comment,
+      })
+      ElMessage.success('创建成功')
+    } else if (dialogMode.value === 'edit' && form.recordId && form.concertId) {
+      // 编辑时同时更新演唱会信息和记录信息
+      await Promise.all([
+        // 更新演唱会信息
+        updateConcert(form.concertId, {
+          artist: form.artist,
+          title: form.title,
+          concertDate: form.concertDate,
+          venue: form.venue,
+          city: form.city,
+          country: form.country,
+          concertType: form.concertType,
+          description: form.description,
+          posterUrl: form.posterUrl,
+        }),
+        // 更新观演记录
+        updateConcertRecord(form.recordId, {
+          id: form.recordId,
+          watchStatus: form.watchStatus,
+          personalRating: form.personalRating,
+          watchDate: form.watchDate,
+          ticketPrice: form.ticketPrice,
+          seatInfo: form.seatInfo,
+          comment: form.comment,
+        }),
+      ])
+      ElMessage.success('更新成功')
+    }
+    dialogVisible.value = false
     loadConcerts()
+  } catch (e) {
+    // 已统一处理
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDelete(recordId: number) {
+  try {
+    await deleteConcertRecord(recordId)
     ElMessage.success('删除成功')
+    loadConcerts()
+  } catch (e) {
+    // 错误在 request 拦截器中已统一提示
   }
 }
 
@@ -680,41 +827,10 @@ async function handlePhotoUpload() {
 
   try {
     uploading.value = true
-    const concert = mockConcerts.find(c => c.id === currentConcertId.value)
-    if (!concert) return
-
-    // 模拟上传照片
-    const uploadPromises = uploadFileList.value.map((uploadFile) => {
-      return new Promise<void>((resolve) => {
-        const file = uploadFile.raw || uploadFile
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          const photo: Photo = {
-            id: Date.now() + Math.random(),
-            title: file.name,
-            filePath: e.target?.result as string,
-            thumbnailPath: e.target?.result as string,
-          }
-          if (!concert.photos) {
-            concert.photos = []
-          }
-          concert.photos.push(photo)
-          resolve()
-        }
-        reader.readAsDataURL(file)
-      })
+    const files = uploadFileList.value.map(uploadFile => uploadFile.raw || uploadFile).filter(Boolean) as File[]
+    await batchUploadPhotos(files, {
+      concertRecordId: currentConcertId.value,
     })
-
-    await Promise.all(uploadPromises)
-
-    // 实际项目中应该调用API
-    // const formData = new FormData()
-    // uploadFileList.value.forEach(uploadFile => {
-    //   const file = uploadFile.raw || uploadFile
-    //   formData.append('files', file)
-    // })
-    // formData.append('concertRecordId', currentConcertId.value.toString())
-    // await uploadPhoto(formData)
 
     ElMessage.success('照片上传成功')
     photoUploadDialogVisible.value = false
@@ -725,65 +841,6 @@ async function handlePhotoUpload() {
   } finally {
     uploading.value = false
   }
-}
-
-// 照片预览功能
-const photoPreviewVisible = ref(false)
-const previewPhotoList = ref<string[]>([])
-const previewIndex = ref(0)
-
-// 全部照片对话框
-const allPhotosDialogVisible = ref(false)
-const allPhotosList = ref<Photo[]>([])
-const allPhotosConcert = ref<any>(null)
-
-function previewPhoto(photo: Photo) {
-  // 找到包含这张照片的演唱会记录
-  const concert = concertList.value.find(cr => cr.photos?.some((p: Photo) => p.id === photo.id))
-  if (!concert || !concert.photos) return
-
-  // 找到当前照片在列表中的索引
-  const currentIndex = concert.photos.findIndex(p => p.id === photo.id)
-  if (currentIndex === -1) return
-
-  // 构建预览图片列表
-  previewPhotoList.value = concert.photos.map(p => p.filePath)
-  previewIndex.value = currentIndex
-  photoPreviewVisible.value = true
-}
-
-function openAllPhotosDialog(concert: any) {
-  allPhotosConcert.value = concert
-  allPhotosList.value = concert.photos || []
-  allPhotosDialogVisible.value = true
-}
-
-function previewPhotoFromAll(photo: Photo) {
-  const currentIndex = allPhotosList.value.findIndex(p => p.id === photo.id)
-  if (currentIndex === -1) return
-  previewPhotoList.value = allPhotosList.value.map(p => p.filePath)
-  previewIndex.value = currentIndex
-  photoPreviewVisible.value = true
-}
-
-function handleDeletePhoto(concertId: number, photoId: number) {
-  ElMessageBox.confirm('确定删除这张照片吗？', '提示', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(async () => {
-    const concert = mockConcerts.find(c => c.id === concertId)
-    if (concert && concert.photos) {
-      const index = concert.photos.findIndex(p => p.id === photoId)
-      if (index > -1) {
-        concert.photos.splice(index, 1)
-        loadConcerts()
-        ElMessage.success('删除成功')
-      }
-    }
-    // 实际项目中应该调用API
-    // await deletePhoto(photoId)
-  }).catch(() => {})
 }
 
 onMounted(() => {
@@ -1115,6 +1172,32 @@ onMounted(() => {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 表单样式 */
+.cover-upload {
+  width: 100%;
+}
+
+.cover-preview {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-cover-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
 }
 </style>
 

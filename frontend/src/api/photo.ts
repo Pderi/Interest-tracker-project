@@ -163,7 +163,7 @@ export function uploadPhoto(file: File, data?: PhotoUploadReq) {
     if (data.location) formData.append('location', data.location)
   }
   
-  return request.post<CommonResult<PhotoUploadResp>>('/api/photos/upload', formData, {
+  return request.post<CommonResult<PhotoUploadResp>>('/photos/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -185,7 +185,7 @@ export function batchUploadPhotos(files: File[], data?: PhotoUploadReq) {
     if (data.concertRecordId) formData.append('concertRecordId', data.concertRecordId.toString())
   }
   
-  return request.post<CommonResult<PhotoUploadResp[]>>('/api/photos/batch-upload', formData, {
+  return request.post<CommonResult<PhotoUploadResp[]>>('/photos/batch-upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -196,70 +196,70 @@ export function batchUploadPhotos(files: File[], data?: PhotoUploadReq) {
  * 获取照片详情
  */
 export function getPhotoDetail(id: number) {
-  return request.get<CommonResult<PhotoDetail>>(`/api/photos/${id}`)
+  return request.get<CommonResult<PhotoDetail>>(`/photos/${id}`)
 }
 
 /**
  * 更新照片信息
  */
 export function updatePhoto(id: number, data: PhotoUpdateReq) {
-  return request.put<CommonResult<boolean>>(`/api/photos/${id}`, data)
+  return request.put<CommonResult<boolean>>(`/photos/${id}`, data)
 }
 
 /**
  * 删除照片
  */
 export function deletePhoto(id: number) {
-  return request.delete<CommonResult<boolean>>(`/api/photos/${id}`)
+  return request.delete<CommonResult<boolean>>(`/photos/${id}`)
 }
 
 /**
  * 获取照片列表（分页）
  */
 export function getPhotoPage(params?: PhotoPageParams) {
-  return request.get<CommonResult<PageResult<PhotoPageItem>>>('/api/photos', { params })
+  return request.get<CommonResult<PageResult<PhotoPageItem>>>('/photos', { params })
 }
 
 /**
  * 创建照片分类
  */
 export function createPhotoCategory(data: PhotoCategoryCreateReq) {
-  return request.post<CommonResult<PhotoCategory>>('/api/photos/categories', data)
+  return request.post<CommonResult<PhotoCategory>>('/photos/categories', data)
 }
 
 /**
  * 更新照片分类
  */
 export function updatePhotoCategory(id: number, data: PhotoCategoryUpdateReq) {
-  return request.put<CommonResult<boolean>>(`/api/photos/categories/${id}`, data)
+  return request.put<CommonResult<boolean>>(`/photos/categories/${id}`, data)
 }
 
 /**
  * 删除照片分类
  */
 export function deletePhotoCategory(id: number) {
-  return request.delete<CommonResult<boolean>>(`/api/photos/categories/${id}`)
+  return request.delete<CommonResult<boolean>>(`/photos/categories/${id}`)
 }
 
 /**
  * 获取分类详情
  */
 export function getPhotoCategoryDetail(id: number) {
-  return request.get<CommonResult<PhotoCategory>>(`/api/photos/categories/${id}`)
+  return request.get<CommonResult<PhotoCategory>>(`/photos/categories/${id}`)
 }
 
 /**
  * 获取用户的所有分类列表
  */
 export function getPhotoCategoryList() {
-  return request.get<CommonResult<PhotoCategory[]>>('/api/photos/categories')
+  return request.get<CommonResult<PhotoCategory[]>>('/photos/categories')
 }
 
 /**
  * 更新分类排序
  */
 export function updatePhotoCategorySort(categoryIds: number[]) {
-  return request.put<CommonResult<boolean>>('/api/photos/categories/sort', categoryIds)
+  return request.put<CommonResult<boolean>>('/photos/categories/sort', categoryIds)
 }
 
 /**
@@ -270,7 +270,7 @@ export function uploadCoverImage(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   
-  return request.post<CommonResult<string>>('/api/photos/upload-cover', formData, {
+  return request.post<CommonResult<string>>('/photos/upload-cover', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

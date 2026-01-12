@@ -9,7 +9,7 @@
           </el-icon>
         </div>
         <h1 class="text-lg sm:text-xl font-semibold gradient-text">
-          兴趣追踪
+          {{ userStore.userInfo?.username ? `${userStore.userInfo.username}兴趣追踪` : '兴趣追踪' }}
         </h1>
       </div>
 

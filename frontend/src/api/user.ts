@@ -5,21 +5,21 @@ import type { CommonResult, LoginReq, LoginRes, UserInfo } from '@/types/api'
  * 用户登录
  */
 export function login(data: LoginReq) {
-  return request.post<CommonResult<LoginRes>>('/api/user/login', data)
+  return request.post<CommonResult<LoginRes>>('/user/login', data)
 }
 
 /**
  * 用户注册
  */
 export function register(data: LoginReq & { email?: string }) {
-  return request.post<CommonResult<number>>('/api/user/register', data)
+  return request.post<CommonResult<number>>('/user/register', data)
 }
 
 /**
  * 获取用户信息
  */
 export function getUserInfo() {
-  return request.get<CommonResult<UserInfo>>('/api/user/info')
+  return request.get<CommonResult<UserInfo>>('/user/info')
 }
 
 /**
@@ -34,6 +34,6 @@ export function logout() {
  * 刷新 Token
  */
 export function refreshToken() {
-  return request.post<CommonResult<string>>('/api/user/refresh-token')
+  return request.post<CommonResult<string>>('/user/refresh-token')
 }
 
