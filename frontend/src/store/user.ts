@@ -9,9 +9,19 @@ function getStoredToken(): string {
   return localStorage.getItem('token') || sessionStorage.getItem('token') || ''
 }
 
+// 从缓存获取用户信息
+function getCachedUserInfo(): UserInfo | null {
+  try {
+    const cached = localStorage.getItem('userInfo')
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(getStoredToken())
-  const userInfo = ref<UserInfo | null>(null)
+  const userInfo = ref<UserInfo | null>(getCachedUserInfo())
 
   // 设置token（默认存 localStorage，Login 页面会根据"记住我"调整）
   function setToken(newToken: string) {
@@ -28,11 +38,22 @@ export const useUserStore = defineStore('user', () => {
   async function fetchUserInfo() {
     try {
       const res = await getUserInfo()
-      if (res.data) {
+      if (res.code === 0 && res.data) {
         setUserInfo(res.data)
+        // 同时保存到 localStorage 以便刷新后快速显示
+        localStorage.setItem('userInfo', JSON.stringify(res.data))
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)
+      // 如果获取失败，尝试从缓存读取
+      const cached = localStorage.getItem('userInfo')
+      if (cached) {
+        try {
+          setUserInfo(JSON.parse(cached))
+        } catch {
+          // 忽略解析错误
+        }
+      }
     }
   }
 
@@ -46,6 +67,7 @@ export const useUserStore = defineStore('user', () => {
       token.value = ''
       userInfo.value = null
       localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
       sessionStorage.removeItem('token')
       router.push('/login')
     }

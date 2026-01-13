@@ -8,10 +8,13 @@
       <div class="absolute left-8 sm:left-12 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/30 to-transparent shadow-lg shadow-[#00d4ff]/20"></div>
 
       <!-- 时间线节点 -->
-      <div class="space-y-8">
+      <div v-if="timelineItems.length === 0 && !loading" class="text-center py-12 text-gray-400">
+        暂无时间线数据
+      </div>
+      <div v-else class="space-y-8">
         <div
           v-for="(item, index) in timelineItems"
-          :key="item.id"
+          :key="`${item.type}-${item.id}`"
           class="timeline-item relative pl-16 sm:pl-24"
           :style="{ animationDelay: `${index * 100}ms` }"
         >
@@ -21,7 +24,8 @@
           <!-- 卡片 -->
           <AnimatedCard
             variant="glass"
-            class="timeline-card group"
+            class="timeline-card group cursor-pointer"
+            @click="handleItemClick(item)"
           >
             <div class="rounded-2xl overflow-hidden">
               <div class="p-4 sm:p-6">
@@ -39,7 +43,7 @@
                       <span class="text-xs sm:text-sm text-[#00d4ff]/80 font-medium flicker">{{ getTypeLabel(item.type) }}</span>
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-white mb-1">{{ item.title }}</h3>
-                    <p class="text-sm text-[#00d4ff]/60">{{ formatDate(item.date) }}</p>
+                    <p class="text-sm text-[#00d4ff]/60">{{ formatDate(item.activityTime) }}</p>
                   </div>
                 </div>
 
@@ -49,9 +53,9 @@
                 </div>
 
                 <!-- 标签 -->
-                <div v-if="item.tags && item.tags.length" class="flex flex-wrap gap-2 timeline-tags">
+                <div v-if="parseTags(item.tags).length > 0" class="flex flex-wrap gap-2 timeline-tags">
                   <el-tag
-                    v-for="tag in item.tags"
+                    v-for="tag in parseTags(item.tags)"
                     :key="tag"
                     type="info"
                     size="small"
@@ -62,11 +66,12 @@
                 </div>
 
                 <!-- 图片预览 -->
-                <div v-if="item.image" class="mt-4 rounded-xl overflow-hidden">
+                <div v-if="item.cover" class="mt-4 rounded-xl overflow-hidden">
                   <img 
-                    :src="item.image" 
+                    :src="item.cover" 
                     :alt="item.title"
                     class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                    @error="(e: any) => { e.target.style.display = 'none' }"
                   />
                 </div>
               </div>
@@ -77,7 +82,7 @@
     </div>
 
     <!-- 加载更多 -->
-    <div class="text-center mt-8">
+    <div v-if="hasMore || loading" class="text-center mt-8">
       <AnimatedButton
         variant="primary"
         :loading="loading"
@@ -86,112 +91,39 @@
         {{ loading ? '加载中...' : '加载更多' }}
       </AnimatedButton>
     </div>
+    <div v-else-if="timelineItems.length > 0" class="text-center mt-8 text-gray-400 text-sm">
+      没有更多数据了
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Camera, VideoPlay, Headset, Trophy, Document, Location, Clock } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { 
   AnimatedButton, 
   AnimatedCard,
 } from '@/components/uiverse'
+import { getTimeline } from '@/api/dashboard'
+import { ElMessage } from 'element-plus'
+import type { TimelineItem } from '@/types/api'
 
-// 假数据
-const timelineItems = ref([
-  {
-    id: 1,
-    type: 'photo',
-    title: '日落时分',
-    description: '在海岸边拍摄的美丽日落，天空被染成了橙红色。',
-    date: '2025-01-15',
-    tags: ['风景', '日落', '海岸'],
-    image: 'https://picsum.photos/800/400?random=1',
-  },
-  {
-    id: 2,
-    type: 'book',
-    title: '读完了《百年孤独》',
-    description: '一部震撼人心的魔幻现实主义巨作，马尔克斯的想象力令人叹为观止。',
-    date: '2025-01-14',
-    tags: ['魔幻现实主义', '文学经典'],
-    rating: 9.5,
-  },
-  {
-    id: 3,
-    type: 'travel',
-    title: '去了北京',
-    description: '故宫和天坛都太震撼了，感受到了深厚的历史底蕴。',
-    date: '2025-01-10',
-    tags: ['国内', '历史文化', '城市'],
-    image: 'https://picsum.photos/800/400?random=2',
-  },
-  {
-    id: 4,
-    type: 'concert',
-    title: '周杰伦演唱会',
-    description: '现场氛围太棒了，经典歌曲一首接一首，全场大合唱！',
-    date: '2024-12-25',
-    tags: ['流行', '华语'],
-    rating: 9.5,
-  },
-  {
-    id: 5,
-    type: 'movie',
-    title: '星际穿越',
-    description: '重新观看了这部经典的科幻电影，依然震撼。',
-    date: '2024-12-19',
-    tags: ['科幻', '剧情'],
-    rating: 9.5,
-  },
-  {
-    id: 6,
-    type: 'music',
-    title: 'Bohemian Rhapsody',
-    artist: 'Queen',
-    description: '经典中的经典，每次听都有新的感受。',
-    date: '2024-12-18',
-    tags: ['摇滚', '经典'],
-  },
-  {
-    id: 7,
-    type: 'book',
-    title: '读完了《1984》',
-    description: '对极权主义的深刻警示，至今仍具有强烈的现实意义。',
-    date: '2024-12-15',
-    tags: ['反乌托邦', '政治'],
-    rating: 9.8,
-  },
-  {
-    id: 8,
-    type: 'travel',
-    title: '去了杭州西湖',
-    description: '西湖的美景让人流连忘返，特别是断桥残雪。',
-    date: '2024-12-10',
-    tags: ['国内', '自然风光', '城市'],
-    image: 'https://picsum.photos/800/400?random=3',
-  },
-  {
-    id: 9,
-    type: 'match',
-    title: '曼城 vs 利物浦',
-    description: '精彩的英超对决，最终3-2结束。',
-    date: '2024-12-05',
-    tags: ['足球', '英超'],
-  },
-  {
-    id: 10,
-    type: 'photo',
-    title: '城市夜景',
-    description: '从山顶俯瞰整个城市的夜景，灯火通明。',
-    date: '2024-12-01',
-    tags: ['城市', '夜景'],
-    image: 'https://picsum.photos/800/400?random=4',
-  },
-])
+const router = useRouter()
 
+const timelineItems = ref<TimelineItem[]>([])
 const loading = ref(false)
+const pageNo = ref(1)
+const pageSize = ref(20)
+const hasMore = ref(true)
+
+// 筛选条件
+const selectedTypes = ref<string[]>([])
+const startTime = ref<string>('')
+const endTime = ref<string>('')
+const tagFilter = ref<string>('')
+const keyword = ref<string>('')
 
 function getTypeIcon(type: string) {
   const map: Record<string, { icon: any; class: string }> = {
@@ -219,17 +151,96 @@ function getTypeLabel(type: string) {
   return map[type] || type
 }
 
-function formatDate(date: string) {
-  return dayjs(date).format('YYYY年MM月DD日')
+function formatDate(dateStr: string) {
+  return dayjs(dateStr).format('YYYY年MM月DD日')
+}
+
+function parseTags(tags?: string): string[] {
+  if (!tags) return []
+  return tags.split(',').filter(t => t.trim())
+}
+
+async function loadTimeline(reset = false) {
+  if (loading.value) return
+
+  try {
+    loading.value = true
+
+    if (reset) {
+      pageNo.value = 1
+      timelineItems.value = []
+    }
+
+    const params: any = {
+      pageNo: pageNo.value,
+      pageSize: pageSize.value,
+    }
+
+    if (selectedTypes.value.length > 0) {
+      params.types = selectedTypes.value.join(',')
+    }
+    if (startTime.value) {
+      params.startTime = startTime.value
+    }
+    if (endTime.value) {
+      params.endTime = endTime.value
+    }
+    if (tagFilter.value) {
+      params.tag = tagFilter.value
+    }
+    if (keyword.value) {
+      params.keyword = keyword.value
+    }
+
+    const res = await getTimeline(params)
+    if (res.code === 0) {
+      const data = res.data
+      if (reset) {
+        timelineItems.value = data.list || []
+      } else {
+        timelineItems.value.push(...(data.list || []))
+      }
+      hasMore.value = timelineItems.value.length < (data.total || 0)
+    }
+  } catch (error: any) {
+    console.error('加载时间线失败:', error)
+    ElMessage.error('加载时间线失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 function loadMore() {
-  loading.value = true
-  setTimeout(() => {
-    // 模拟加载更多数据
-    loading.value = false
-  }, 1000)
+  if (hasMore.value && !loading.value) {
+    pageNo.value++
+    loadTimeline(false)
+  }
 }
+
+function handleItemClick(item: TimelineItem) {
+  const routes: Record<string, string> = {
+    photo: '/photo',
+    movie: '/movie',
+    music: '/music',
+    book: '/book',
+    travel: '/travel',
+    concert: '/concert',
+    match: '/match',
+  }
+
+  const baseRoute = routes[item.type]
+  if (baseRoute) {
+    if (item.detailId) {
+      router.push(`${baseRoute}/${item.detailId}`)
+    } else if (item.recordId) {
+      router.push(baseRoute)
+    }
+  }
+}
+
+onMounted(() => {
+  loadTimeline(true)
+})
 </script>
 
 <style scoped>

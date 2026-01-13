@@ -619,3 +619,143 @@ export interface TravelPlaceUpdateReq {
   coverUrl?: string
 }
 
+/**
+ * Dashboard 统计概览
+ */
+export interface DashboardSummary {
+  photoCount: number
+  movieCount: number
+  musicCount: number
+  bookCount: number
+  travelCount: number
+  concertCount: number
+  matchCount: number
+  weeklyStats: {
+    photo: number
+    movie: number
+    music: number
+    book: number
+    travel: number
+    concert: number
+    match: number
+  }
+  lastWeekStats?: {
+    photo: number
+    movie: number
+    music: number
+    book: number
+    travel: number
+    concert: number
+    match: number
+  }
+  monthlyStats: {
+    photo: number
+    movie: number
+    music: number
+    book: number
+    travel: number
+    concert: number
+    match: number
+  }
+  todayStats: {
+    photo: number
+    movie: number
+    music: number
+    book: number
+    travel: number
+    concert: number
+    match: number
+  }
+  movieStatusCounts?: Record<number, number>
+  musicStatusCounts?: Record<number, number>
+  bookStatusCounts?: Record<number, number>
+  trendData?: {
+    dates: string[]
+    photo: number[]
+    movie: number[]
+    music: number[]
+    book: number[]
+    travel: number[]
+    concert: number[]
+    match: number[]
+  }
+}
+
+/**
+ * 数据洞察
+ */
+export interface Insights {
+  mostActiveType?: {
+    type: string
+    typeName: string
+    count: number
+    percentage: number
+  }
+  ratingTrend?: {
+    currentAvgRating: number
+    previousAvgRating: number
+    changePercentage: number
+    trend: 'up' | 'down' | 'stable'
+  }
+  peakActivity?: {
+    date: string
+    count: number
+    type: string
+    typeName: string
+  }
+  completionRate?: {
+    completed: number
+    total: number
+    percentage: number
+    type: string
+    typeName: string
+  }
+}
+
+/**
+ * 最近活动
+ */
+export interface RecentActivity {
+  id: number
+  type: 'photo' | 'movie' | 'music' | 'book' | 'travel' | 'concert' | 'match'
+  title: string
+  description?: string
+  cover?: string
+  activityTime: string
+  tags?: string
+  detailId?: number
+  recordId?: number
+  rating?: number
+  status?: number
+  subtitle?: string
+}
+
+/**
+ * 时间线项
+ */
+export interface TimelineItem {
+  id: number
+  type: 'photo' | 'movie' | 'music' | 'book' | 'travel' | 'concert' | 'match'
+  title: string
+  description?: string
+  cover?: string
+  activityTime: string
+  tags?: string
+  detailId?: number
+  recordId?: number
+  metadata?: string
+}
+
+/**
+ * 时间线分页参数
+ */
+export interface TimelinePageParams {
+  pageNo?: number
+  pageSize?: number
+  types?: string // 多个用逗号分隔：photo,movie,music
+  startTime?: string // ISO 8601 格式
+  endTime?: string // ISO 8601 格式
+  tag?: string
+  keyword?: string
+}
+
