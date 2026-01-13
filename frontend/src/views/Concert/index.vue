@@ -63,6 +63,31 @@
             添加第一条记录
           </AnimatedButton>
         </template>
+        <template #guide>
+          <div class="guide-inline-panel glass-effect">
+            <div class="guide-step-list">
+              <div
+                v-for="(step, idx) in guideSteps"
+                :key="step.title"
+                class="guide-step-card"
+              >
+                <div class="guide-step-index">{{ idx + 1 }}</div>
+                <div class="guide-step-content">
+                  <p class="guide-step-title">{{ step.title }}</p>
+                  <p class="guide-step-desc">{{ step.description }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="guide-inline-actions">
+              <AnimatedButton size="small" variant="primary" @click="openGuide">
+                开始快速指引
+              </AnimatedButton>
+              <AnimatedButton size="small" variant="secondary" @click="openCreateDialog">
+                直接添加
+              </AnimatedButton>
+            </div>
+          </div>
+        </template>
       </EmptyState>
 
       <div
@@ -232,6 +257,45 @@
         />
       </div>
     </div>
+
+    <!-- 快速引导浮层 -->
+    <transition name="guide-fade">
+      <div v-if="guideVisible" class="guide-overlay">
+        <div class="guide-modal glass-effect">
+          <div class="guide-modal-header">
+            <div>
+              <p class="guide-modal-label">快速开始</p>
+              <h3 class="guide-modal-title">3 步搞定你的演唱会清单</h3>
+            </div>
+            <button class="guide-close" aria-label="close" @click="closeGuide(true)">×</button>
+          </div>
+          <div class="guide-modal-body">
+            <div class="guide-modal-steps">
+              <div
+                v-for="(step, idx) in guideSteps"
+                :key="step.title"
+                class="guide-modal-card"
+              >
+                <div class="guide-modal-index">{{ idx + 1 }}</div>
+                <div class="guide-modal-content">
+                  <p class="guide-modal-card-title">{{ step.title }}</p>
+                  <p class="guide-modal-card-desc">{{ step.description }}</p>
+                </div>
+                <span class="guide-modal-pill">{{ step.action }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="guide-modal-footer">
+            <AnimatedButton variant="secondary" size="small" @click="closeGuide(false)">
+              稍后再看
+            </AnimatedButton>
+            <AnimatedButton variant="primary" size="small" @click="closeGuide(true)">
+              已了解，开始使用
+            </AnimatedButton>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- 新建 / 编辑弹窗 -->
     <el-dialog
@@ -563,6 +627,27 @@ const statusOptions = [
 
 const imageErrorMap = reactive<Record<number, boolean>>({})
 
+const GUIDE_STORAGE_KEY = 'concert_onboarding_seen'
+const guideVisible = ref(false)
+const guideAutoShown = ref(false)
+const guideSteps = [
+  {
+    title: '添加第一场演唱会',
+    description: '点击右上角“添加记录”，填写艺人、城市、场馆、海报等信息。',
+    action: '添加记录',
+  },
+  {
+    title: '用筛选快速定位',
+    description: '状态筛选 + 关键词搜索，快速找到想看/已看，列表支持分页。',
+    action: '筛选/搜索',
+  },
+  {
+    title: '评分与照片',
+    description: '为演唱会打分、上传照片并留下评价，记录你的观演体验。',
+    action: '评分/照片',
+  },
+]
+
 async function loadConcerts() {
   try {
     loading.value = true
@@ -578,6 +663,7 @@ async function loadConcerts() {
     concertList.value = res.data.page?.list || []
     total.value = res.data.page?.total || 0
     statusCounts.value = res.data.statusCounts || {}
+    maybeShowGuide()
     await loadConcertPhotos(concertList.value)
   } catch (e) {
     // 错误在 request 拦截器中已统一提示
@@ -604,6 +690,43 @@ async function loadConcertPhotos(list: ConcertPageItem[]) {
     )
   } catch (err) {
     // 静默失败，避免影响主列表
+  }
+}
+
+function hasSeenGuide() {
+  try {
+    return localStorage.getItem(GUIDE_STORAGE_KEY) === '1'
+  } catch (err) {
+    console.warn('read guide flag failed', err)
+    return false
+  }
+}
+
+function setGuideSeen() {
+  try {
+    localStorage.setItem(GUIDE_STORAGE_KEY, '1')
+  } catch (err) {
+    console.warn('persist guide flag failed', err)
+  }
+}
+
+function maybeShowGuide() {
+  if (guideAutoShown.value) return
+  if (hasSeenGuide()) return
+  if ((total.value || 0) === 0) {
+    guideVisible.value = true
+    guideAutoShown.value = true
+  }
+}
+
+function openGuide() {
+  guideVisible.value = true
+}
+
+function closeGuide(markSeen = false) {
+  guideVisible.value = false
+  if (markSeen) {
+    setGuideSeen()
   }
 }
 
@@ -1362,6 +1485,288 @@ onMounted(() => {
   position: absolute;
   top: 4px;
   right: 4px;
+}
+
+/* 引导面板 */
+.guide-inline-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(0, 212, 255, 0.06));
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+.guide-step-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.guide-step-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.guide-step-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #00d4ff, #00ffcc);
+  color: #0c1224;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.guide-step-content {
+  text-align: left;
+}
+
+.guide-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6f6ff;
+  margin-bottom: 4px;
+}
+
+.guide-step-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+}
+
+.guide-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* 引导浮层 */
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.1), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgba(0, 255, 204, 0.08), transparent 55%),
+    rgba(6, 10, 26, 0.75);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 2100;
+}
+
+.guide-modal {
+  width: min(920px, 92vw);
+  max-width: 960px;
+  border-radius: 16px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(10, 14, 35, 0.9), rgba(10, 20, 45, 0.9));
+}
+
+.guide-modal::before,
+.guide-modal::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.4;
+  z-index: 0;
+}
+
+.guide-modal::before {
+  top: -60px;
+  left: -40px;
+  background: rgba(0, 212, 255, 0.25);
+}
+
+.guide-modal::after {
+  bottom: -60px;
+  right: -50px;
+  background: rgba(0, 255, 204, 0.2);
+}
+
+.guide-modal-header,
+.guide-modal-body,
+.guide-modal-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.guide-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.guide-modal-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.guide-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6f6ff;
+}
+
+.guide-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e6f6ff;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.guide-close:hover {
+  background: rgba(0, 212, 255, 0.12);
+  color: #0c1224;
+}
+
+.guide-modal-body {
+  margin: 10px 0 18px;
+}
+
+.guide-modal-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.guide-modal-card {
+  position: relative;
+  padding: 14px 14px 16px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.guide-modal-card::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.12), rgba(0, 255, 204, 0.08));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.guide-modal-card:hover::after {
+  opacity: 1;
+}
+
+.guide-modal-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00d4ff, #00ffcc);
+  color: #0c1224;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(0, 212, 255, 0.25);
+  position: relative;
+  z-index: 1;
+}
+
+.guide-modal-content {
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.guide-modal-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e6f6ff;
+  margin-bottom: 6px;
+}
+
+.guide-modal-card-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+.guide-modal-pill {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 212, 255, 0.16);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  color: #a7f5ff;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.guide-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.guide-fade-enter-active,
+.guide-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.guide-fade-enter-from,
+.guide-fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 720px) {
+  .guide-modal {
+    width: 94vw;
+    padding: 16px;
+  }
+
+  .guide-modal-title {
+    font-size: 18px;
+  }
+
+  .guide-modal-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-inline-panel,
+  .guide-overlay,
+  .guide-modal-card::after {
+    animation: none;
+    transition: none;
+  }
 }
 </style>
 
