@@ -381,5 +381,5 @@ GET /api/music/albums?pageNo=1&pageSize=10&status=3&sort=listenDate
 ---
 
 **文档版本**：V1.0  
-**最后更新**：2025-01-XX
+**最后更新**：2026-01-16
 
