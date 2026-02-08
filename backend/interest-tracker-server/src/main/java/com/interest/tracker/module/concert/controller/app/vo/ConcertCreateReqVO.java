@@ -7,6 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
@@ -62,8 +63,8 @@ public class ConcertCreateReqVO {
     @Schema(description = "座位信息", example = "A区1排1号")
     private String seatInfo;
 
-    @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"摇滚\",\"经典\"]")
+    private List<String> tags;
 
     @Schema(description = "评价", example = "很棒的演出")
     private String comment;

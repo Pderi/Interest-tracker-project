@@ -15,7 +15,7 @@ export interface Photo {
   height?: number
   mimeType?: string
   location?: string
-  tags?: string
+  tags?: string[]
   category?: string
   categoryId?: number
   shootTime?: string
@@ -39,7 +39,7 @@ export interface PhotoPageItem {
   categoryId?: number
   shootTime?: string
   location?: string
-  tags?: string
+  tags?: string[]
   viewCount?: number
   likeCount?: number
   createTime: string
@@ -60,7 +60,7 @@ export interface PhotoDetail extends Photo {
 export interface PhotoUploadReq {
   title?: string
   description?: string
-  tags?: string
+  tags?: string[]
   categoryId?: number
   travelRecordId?: number
   concertRecordId?: number
@@ -77,6 +77,7 @@ export interface PhotoUploadResp {
   fileSize?: number
   width?: number
   height?: number
+  tags?: string[]
   createTime: string
 }
 
@@ -87,7 +88,7 @@ export interface PhotoUpdateReq {
   id?: number // 虽然从路径参数传递，但后端验证需要此字段
   title?: string
   description?: string
-  tags?: string
+  tags?: string[]
   categoryId?: number
   travelRecordId?: number | null
   concertRecordId?: number | null
@@ -156,7 +157,11 @@ export function uploadPhoto(file: File, data?: PhotoUploadReq) {
   if (data) {
     if (data.title) formData.append('title', data.title)
     if (data.description) formData.append('description', data.description)
-    if (data.tags) formData.append('tags', data.tags)
+    if (data.tags && data.tags.length) {
+      data.tags.forEach(tag => {
+        if (tag && tag.trim()) formData.append('tags', tag.trim())
+      })
+    }
     if (data.categoryId) formData.append('categoryId', data.categoryId.toString())
     if (data.travelRecordId) formData.append('travelRecordId', data.travelRecordId.toString())
     if (data.concertRecordId) formData.append('concertRecordId', data.concertRecordId.toString())

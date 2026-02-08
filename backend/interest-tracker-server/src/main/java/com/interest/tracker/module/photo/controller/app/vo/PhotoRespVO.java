@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 照片详情响应 VO
@@ -47,8 +48,8 @@ public class PhotoRespVO {
     @Schema(description = "拍摄地点", example = "北京")
     private String location;
 
-    @Schema(description = "标签（逗号分隔）", example = "风景,自然")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"风景\",\"自然\"]")
+    private List<String> tags;
 
     @Schema(description = "分类名称", example = "风景")
     private String category;

@@ -6,6 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 影视分页列表响应 VO
@@ -40,8 +41,8 @@ public class MoviePageRespVO {
     @Schema(description = "观看日期", example = "2025-01-15")
     private LocalDate watchDate;
 
-    @Schema(description = "标签（逗号分隔）", example = "动作,悬疑")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"动作\",\"悬疑\"]")
+    private List<String> tags;
 
     @Schema(description = "评价", example = "很好看")
     private String comment;

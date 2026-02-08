@@ -767,9 +767,8 @@ function getStatusTextClass(type: string, status: number) {
   return 'text-gray-300'
 }
 
-function parseTags(tags?: string): string[] {
-  if (!tags) return []
-  return tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+function parseTags(tags?: string[]): string[] {
+  return (tags || []).map(t => t.trim()).filter(t => t.length > 0)
 }
 
 function handleActivityClick(activity: any) {

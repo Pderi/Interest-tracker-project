@@ -6,6 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 图书分页列表响应 VO
@@ -50,8 +51,8 @@ public class BookPageRespVO {
     @Schema(description = "阅读进度（0-100）", example = "100.0")
     private BigDecimal readProgress;
 
-    @Schema(description = "标签（逗号分隔）", example = "经典,文学")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"经典\",\"文学\"]")
+    private List<String> tags;
 
     @Schema(description = "评价", example = "很经典")
     private String comment;

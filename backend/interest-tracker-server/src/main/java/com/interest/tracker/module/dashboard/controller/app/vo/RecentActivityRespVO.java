@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 最近活动响应 VO
@@ -32,8 +33,8 @@ public class RecentActivityRespVO {
     @Schema(description = "活动时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime activityTime;
 
-    @Schema(description = "标签（逗号分隔）")
-    private String tags;
+    @Schema(description = "标签列表")
+    private List<String> tags;
 
     @Schema(description = "关联的详情ID（用于跳转）")
     private Long detailId;

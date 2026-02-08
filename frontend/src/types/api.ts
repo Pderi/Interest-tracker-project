@@ -51,7 +51,7 @@ export interface MoviePageItem {
   watchStatus: number // 1 想看 2 在看 3 已看 4 弃剧
   personalRating?: number
   watchDate?: string
-  tags?: string
+  tags?: string[]
   comment?: string
   createTime: string
 }
@@ -64,10 +64,10 @@ export interface MovieDetail {
     id: number
     title: string
     type: number
-    genre?: string
+    genre?: string[]
     releaseYear?: number
     director?: string
-    actors?: string
+    actors?: string[]
     description?: string
     posterUrl?: string
     rating?: number
@@ -81,7 +81,7 @@ export interface MovieDetail {
     watchDuration?: number
     progress?: number
     comment?: string
-    tags?: string
+    tags?: string[]
   } | null
 }
 
@@ -93,9 +93,10 @@ export interface MovieCreateReq {
   title: string
   type: number
   watchStatus?: number
+  watchDate?: string
   personalRating?: number
   posterUrl?: string
-  tags?: string
+  tags?: string[]
   comment?: string
 }
 
@@ -116,7 +117,7 @@ export interface MovieRecordUpdateReq {
   progress?: number
   comment?: string
   posterUrl?: string
-  tags?: string
+  tags?: string[]
 }
 
 /**
@@ -162,6 +163,7 @@ export interface AlbumPageItem {
   listenDate?: string
   listenCount?: number
   comment?: string
+  tags?: string[]
   createTime: string
 }
 
@@ -187,7 +189,7 @@ export interface AlbumDetail {
     listenDate?: string
     listenCount?: number
     comment?: string
-    tags?: string
+    tags?: string[]
   } | null
 }
 
@@ -205,7 +207,7 @@ export interface AlbumCreateReq {
   duration?: number
   listenStatus?: number
   personalRating?: number
-  tags?: string
+  tags?: string[]
   comment?: string
 }
 
@@ -224,6 +226,7 @@ export interface AlbumRecordUpdateReq {
   listenDate?: string
   listenCount?: number
   comment?: string
+  tags?: string[]
 }
 
 /**
@@ -248,7 +251,7 @@ export interface BookPageItem {
   personalRating?: number
   readDate?: string
   readProgress?: number
-  tags?: string
+  tags?: string[]
   comment?: string
   createTime: string
 }
@@ -277,7 +280,7 @@ export interface BookDetail {
     readDate?: string
     readProgress?: number
     comment?: string
-    tags?: string
+    tags?: string[]
   } | null
 }
 
@@ -293,6 +296,7 @@ export interface BookCreateReq {
   readStatus?: number // 1 想读 2 在读 3 已读 4 弃读
   personalRating?: number
   comment?: string
+  tags?: string[]
 }
 
 export interface BookCreateRes {
@@ -311,7 +315,7 @@ export interface BookRecordUpdateReq {
   readProgress?: number
   comment?: string
   coverUrl?: string
-  tags?: string
+  tags?: string[]
 }
 
 /**
@@ -419,6 +423,7 @@ export interface ConcertPageItem {
   ticketPrice?: number
   seatInfo?: string
   comment?: string
+  tags?: string[]
   createTime: string
 }
 
@@ -446,7 +451,7 @@ export interface ConcertDetail {
     ticketPrice?: number
     seatInfo?: string
     comment?: string
-    tags?: string
+    tags?: string[]
   } | null
 }
 
@@ -468,7 +473,7 @@ export interface ConcertCreateReq {
   watchDate?: string
   ticketPrice?: number
   seatInfo?: string
-  tags?: string
+  tags?: string[]
   comment?: string
 }
 
@@ -488,6 +493,7 @@ export interface ConcertRecordUpdateReq {
   ticketPrice?: number
   seatInfo?: string
   comment?: string
+  tags?: string[]
 }
 
 /**
@@ -532,6 +538,7 @@ export interface TravelPageItem {
   travelDuration?: number
   expense?: number
   comment?: string
+  tags?: string[]
   createTime: string
 }
 
@@ -559,7 +566,7 @@ export interface TravelDetail {
     travelDuration?: number
     expense?: number
     comment?: string
-    tags?: string
+    tags?: string[]
   } | null
 }
 
@@ -581,7 +588,7 @@ export interface TravelCreateReq {
   travelDate?: string
   travelDuration?: number
   expense?: number
-  tags?: string
+  tags?: string[]
   comment?: string
 }
 
@@ -601,6 +608,7 @@ export interface TravelRecordUpdateReq {
   travelDuration?: number
   expense?: number
   comment?: string
+  tags?: string[]
 }
 
 /**
@@ -722,7 +730,7 @@ export interface RecentActivity {
   description?: string
   cover?: string
   activityTime: string
-  tags?: string
+  tags?: string[]
   detailId?: number
   recordId?: number
   rating?: number
@@ -740,7 +748,7 @@ export interface TimelineItem {
   description?: string
   cover?: string
   activityTime: string
-  tags?: string
+  tags?: string[]
   detailId?: number
   recordId?: number
   metadata?: string

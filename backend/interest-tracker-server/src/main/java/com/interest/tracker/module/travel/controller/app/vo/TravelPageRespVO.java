@@ -6,6 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 旅游分页列表响应 VO
@@ -57,6 +58,9 @@ public class TravelPageRespVO {
 
     @Schema(description = "评价", example = "很棒的旅行")
     private String comment;
+
+    @Schema(description = "标签列表", example = "[\"历史\",\"文化\"]")
+    private List<String> tags;
 
     @Schema(description = "创建时间", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;

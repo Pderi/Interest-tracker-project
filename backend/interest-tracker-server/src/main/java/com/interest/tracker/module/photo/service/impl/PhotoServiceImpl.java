@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -105,6 +106,9 @@ public class PhotoServiceImpl implements PhotoService {
         photoDO.setStorageType(1); // 1-COS
         photoDO.setViewCount(0);
         photoDO.setLikeCount(0);
+        if (reqVO.getTags() != null) {
+            photoDO.setTags(String.join("|", reqVO.getTags()));
+        }
 
         // 5. 如果指定了分类，同步分类名称
         if (reqVO.getCategoryId() != null) {
@@ -123,6 +127,7 @@ public class PhotoServiceImpl implements PhotoService {
 
         // 7. 返回结果
         PhotoUploadRespVO respVO = BeanUtils.toBean(photoDO, PhotoUploadRespVO.class);
+        respVO.setTags(splitToList(photoDO.getTags()));
         return respVO;
     }
 
@@ -190,8 +195,8 @@ public class PhotoServiceImpl implements PhotoService {
         if (updateDO.getDescription() != null) {
             photoDO.setDescription(updateDO.getDescription());
         }
-        if (updateDO.getTags() != null) {
-            photoDO.setTags(updateDO.getTags());
+        if (reqVO.getTags() != null) {
+            photoDO.setTags(String.join("|", reqVO.getTags()));
         }
         if (updateDO.getCategoryId() != null) {
             photoDO.setCategoryId(updateDO.getCategoryId());
@@ -241,7 +246,9 @@ public class PhotoServiceImpl implements PhotoService {
         photoDO.setViewCount((photoDO.getViewCount() == null ? 0 : photoDO.getViewCount()) + 1);
         photoMapper.updateById(photoDO);
 
-        return BeanUtils.toBean(photoDO, PhotoRespVO.class);
+        PhotoRespVO respVO = BeanUtils.toBean(photoDO, PhotoRespVO.class);
+        respVO.setTags(splitToList(photoDO.getTags()));
+        return respVO;
     }
 
     @Override
@@ -256,7 +263,11 @@ public class PhotoServiceImpl implements PhotoService {
 
         // 转换为VO
         List<PhotoPageRespVO> voList = pageResult.getList().stream()
-                .map(photoDO -> BeanUtils.toBean(photoDO, PhotoPageRespVO.class))
+                .map(photoDO -> {
+                    PhotoPageRespVO vo = BeanUtils.toBean(photoDO, PhotoPageRespVO.class);
+                    vo.setTags(splitToList(photoDO.getTags()));
+                    return vo;
+                })
                 .collect(Collectors.toList());
 
         return new PageResult<>(voList, pageResult.getTotal());
@@ -343,6 +354,19 @@ public class PhotoServiceImpl implements PhotoService {
             throw exception(PHOTO_NOT_EXISTS);
         }
         return photoDO;
+    }
+
+    /**
+     * 将竖线分隔的标签拆成非空列表
+     */
+    private List<String> splitToList(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("\\|"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
     /**

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,6 +63,9 @@ public class BookServiceImpl implements BookService {
         BookRecordDO recordDO = BeanUtils.toBean(reqVO, BookRecordDO.class);
         recordDO.setUserId(userId);
         recordDO.setBookId(bookDO.getId());
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
         // 设置阅读状态，默认为"想读"
         if (recordDO.getReadStatus() == null) {
             recordDO.setReadStatus(ReadStatusEnum.WANT_TO_READ.getValue()); // 默认"想读"
@@ -126,7 +130,7 @@ public class BookServiceImpl implements BookService {
             recordDO.setComment(reqVO.getComment());
         }
         if (reqVO.getTags() != null) {
-            recordDO.setTags(reqVO.getTags());
+            recordDO.setTags(String.join("|", reqVO.getTags()));
         }
     }
 
@@ -161,6 +165,7 @@ public class BookServiceImpl implements BookService {
         BookRespVO respVO = new BookRespVO();
         BookRespVO.BookInfo bookInfo = BeanUtils.toBean(bookDO, BookRespVO.BookInfo.class);
         BookRespVO.RecordInfo recordInfo = BeanUtils.toBean(recordDO, BookRespVO.RecordInfo.class);
+        recordInfo.setTags(splitToList(recordDO.getTags()));
         respVO.setBook(bookInfo);
         respVO.setRecord(recordInfo);
 
@@ -209,6 +214,7 @@ public class BookServiceImpl implements BookService {
                     }
                     // 填充评价
                     vo.setComment(record.getComment());
+                    vo.setTags(splitToList(record.getTags()));
 
                     return vo;
                 })
@@ -266,6 +272,19 @@ public class BookServiceImpl implements BookService {
             throw exception(BOOK_RECORD_NOT_EXISTS);
         }
         return recordDO;
+    }
+
+    /**
+     * 将竖线分隔的标签拆成非空列表
+     */
+    private List<String> splitToList(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("\\|"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
 }

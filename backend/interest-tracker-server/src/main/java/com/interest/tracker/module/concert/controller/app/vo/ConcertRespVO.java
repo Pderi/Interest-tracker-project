@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.time.LocalDateTime;
 
 /**
@@ -86,8 +87,8 @@ public class ConcertRespVO {
         @Schema(description = "评价", example = "很棒的演出")
         private String comment;
 
-        @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
-        private String tags;
+        @Schema(description = "标签列表", example = "[\"摇滚\",\"经典\"]")
+        private List<String> tags;
     }
 
 }

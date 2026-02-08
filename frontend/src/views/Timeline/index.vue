@@ -155,9 +155,8 @@ function formatDate(dateStr: string) {
   return dayjs(dateStr).format('YYYY年MM月DD日')
 }
 
-function parseTags(tags?: string): string[] {
-  if (!tags) return []
-  return tags.split(',').filter(t => t.trim())
+function parseTags(tags?: string[]): string[] {
+  return (tags || []).map(t => t.trim()).filter(t => t.length > 0)
 }
 
 async function loadTimeline(reset = false) {

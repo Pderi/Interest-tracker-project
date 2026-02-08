@@ -572,6 +572,7 @@ public class DashboardServiceImpl implements DashboardService {
             activity.setTitle(photo.getTitle() != null ? photo.getTitle() : "照片");
             activity.setCover(photo.getThumbnailPath() != null ? photo.getThumbnailPath() : photo.getFilePath());
             activity.setActivityTime(photo.getCreateTime());
+            activity.setTags(splitTags(photo.getTags()));
             activity.setDetailId(photo.getId());
             activities.add(activity);
         }
@@ -606,6 +607,7 @@ public class DashboardServiceImpl implements DashboardService {
             activity.setActivityTime(record.getCreateTime());
             activity.setRating(record.getPersonalRating());
             activity.setStatus(record.getWatchStatus());
+            activity.setTags(splitTags(record.getTags()));
             activity.setRecordId(record.getId());
             activity.setDetailId(record.getMovieId());
             activities.add(activity);
@@ -641,6 +643,7 @@ public class DashboardServiceImpl implements DashboardService {
             activity.setActivityTime(record.getCreateTime());
             activity.setRating(record.getPersonalRating());
             activity.setStatus(record.getListenStatus());
+            activity.setTags(splitTags(record.getTags()));
             activity.setRecordId(record.getId());
             activity.setDetailId(record.getAlbumId());
             activities.add(activity);
@@ -676,6 +679,7 @@ public class DashboardServiceImpl implements DashboardService {
             activity.setActivityTime(record.getCreateTime());
             activity.setRating(record.getPersonalRating());
             activity.setStatus(record.getReadStatus());
+            activity.setTags(splitTags(record.getTags()));
             activity.setRecordId(record.getId());
             activity.setDetailId(record.getBookId());
             activities.add(activity);
@@ -718,6 +722,7 @@ public class DashboardServiceImpl implements DashboardService {
             activity.setActivityTime(record.getCreateTime());
             activity.setRating(record.getPersonalRating());
             activity.setStatus(record.getTravelStatus());
+            activity.setTags(splitTags(record.getTags()));
             activity.setRecordId(record.getId());
             activity.setDetailId(record.getPlaceId());
             activities.add(activity);
@@ -754,6 +759,7 @@ public class DashboardServiceImpl implements DashboardService {
             activity.setActivityTime(record.getCreateTime());
             activity.setRating(record.getPersonalRating());
             activity.setStatus(record.getWatchStatus());
+            activity.setTags(splitTags(record.getTags()));
             activity.setRecordId(record.getId());
             activity.setDetailId(record.getConcertId());
             activities.add(activity);
@@ -828,7 +834,7 @@ public class DashboardServiceImpl implements DashboardService {
                 item.setDescription(photo.getDescription());
                 item.setCover(photo.getThumbnailPath() != null ? photo.getThumbnailPath() : photo.getFilePath());
                 item.setActivityTime(photo.getCreateTime());
-                item.setTags(photo.getTags());
+                item.setTags(splitTags(photo.getTags()));
                 item.setDetailId(photo.getId());
                 items.add(item);
             }
@@ -860,7 +866,7 @@ public class DashboardServiceImpl implements DashboardService {
                 item.setDescription(record.getComment());
                 item.setActivityTime(record.getWatchDate() != null ? 
                     LocalDateTime.of(record.getWatchDate(), LocalTime.MIN) : record.getCreateTime());
-                item.setTags(record.getTags());
+                item.setTags(splitTags(record.getTags()));
                 item.setRecordId(record.getId());
                 item.setDetailId(record.getMovieId());
                 items.add(item);
@@ -893,7 +899,7 @@ public class DashboardServiceImpl implements DashboardService {
                 item.setDescription(record.getComment());
                 item.setActivityTime(record.getListenDate() != null ? 
                     LocalDateTime.of(record.getListenDate(), LocalTime.MIN) : record.getCreateTime());
-                item.setTags(record.getTags());
+                item.setTags(splitTags(record.getTags()));
                 item.setRecordId(record.getId());
                 item.setDetailId(record.getAlbumId());
                 items.add(item);
@@ -926,7 +932,7 @@ public class DashboardServiceImpl implements DashboardService {
                 item.setDescription(record.getComment());
                 item.setActivityTime(record.getReadDate() != null ? 
                     LocalDateTime.of(record.getReadDate(), LocalTime.MIN) : record.getCreateTime());
-                item.setTags(record.getTags());
+                item.setTags(splitTags(record.getTags()));
                 item.setRecordId(record.getId());
                 item.setDetailId(record.getBookId());
                 items.add(item);
@@ -959,7 +965,7 @@ public class DashboardServiceImpl implements DashboardService {
                 item.setDescription(record.getComment());
                 item.setActivityTime(record.getTravelDate() != null ? 
                     LocalDateTime.of(record.getTravelDate(), LocalTime.MIN) : record.getCreateTime());
-                item.setTags(record.getTags());
+                item.setTags(splitTags(record.getTags()));
                 item.setRecordId(record.getId());
                 item.setDetailId(record.getPlaceId());
                 items.add(item);
@@ -992,7 +998,7 @@ public class DashboardServiceImpl implements DashboardService {
                 item.setDescription(record.getComment());
                 item.setActivityTime(record.getWatchDate() != null ? 
                     LocalDateTime.of(record.getWatchDate(), LocalTime.MIN) : record.getCreateTime());
-                item.setTags(record.getTags());
+                item.setTags(splitTags(record.getTags()));
                 item.setRecordId(record.getId());
                 item.setDetailId(record.getConcertId());
                 items.add(item);
@@ -1046,6 +1052,19 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     // ================== 私有方法 ==================
+
+    /**
+     * 标签存储可能为 "|" 或 "," 分隔，这里统一拆成列表返回
+     */
+    private List<String> splitTags(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("[\\|,]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
 
     /**
      * 统计照片数量

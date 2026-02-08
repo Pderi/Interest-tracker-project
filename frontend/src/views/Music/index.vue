@@ -177,6 +177,22 @@
                     </AnimatedTag>
                   </div>
 
+                  <!-- 标签 -->
+                  <div
+                    v-if="album.tags && album.tags.length"
+                    class="flex flex-wrap gap-2 mt-1 music-tags"
+                  >
+                    <AnimatedTag
+                      v-for="(tag, tagIndex) in album.tags.filter(tag => !!tag && !!tag.trim())"
+                      :key="tag"
+                      variant="glow"
+                      :animated="tagIndex % 2 === 0"
+                      class="music-tag-item"
+                    >
+                      {{ tag }}
+                    </AnimatedTag>
+                  </div>
+
                   <div class="mt-2 flex justify-between items-center music-actions">
                     <AnimatedButton
                       variant="outline"
@@ -437,6 +453,35 @@
             />
           </el-form-item>
 
+          <el-form-item label="标签">
+            <div class="tag-input-wrapper">
+              <el-input
+                v-model="tagInput"
+                placeholder="输入一个标签后按回车添加"
+                @keyup.enter.prevent="handleAddTag"
+              />
+              <div class="tag-list" v-if="normalizedFormTags.length">
+                <div
+                  v-for="tag in normalizedFormTags"
+                  :key="tag"
+                  class="tag-chip"
+                >
+                  <AnimatedTag>
+                    {{ tag }}
+                  </AnimatedTag>
+                  <button
+                    class="tag-close-btn"
+                    type="button"
+                    @click.stop="removeTag(tag)"
+                    aria-label="删除标签"
+                  >
+                    <el-icon><Close /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </el-form-item>
+
           <el-form-item label="评价">
             <el-input
               v-model="form.comment"
@@ -467,10 +512,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Headset, StarFilled, Search, ChatLineRound, UploadFilled, Delete } from '@element-plus/icons-vue'
+import { Plus, Headset, StarFilled, Search, ChatLineRound, UploadFilled, Delete, Close } from '@element-plus/icons-vue'
 import { getAlbumPage, createAlbum, getAlbumDetail, updateAlbum, updateAlbumRecord, deleteAlbumRecord } from '@/api/music'
 import { uploadCoverImage } from '@/api/photo'
 import type { AlbumPageItem } from '@/types/api'
@@ -658,10 +703,17 @@ const form = reactive<{
   listenDate?: string
   listenCount?: number
   comment?: string
+  tags?: string[]
 }>({
   title: '',
   artist: '',
 })
+
+const tagInput = ref('')
+function normalizeTags(tags?: string[]) {
+  return (tags || []).map(t => (t ?? '').trim()).filter(t => t.length > 0)
+}
+const normalizedFormTags = computed(() => normalizeTags(form.tags))
 
 const rules: FormRules = {
   title: [{ required: true, message: '请输入专辑名称', trigger: 'blur' }],
@@ -684,6 +736,8 @@ function resetForm() {
   form.listenDate = ''
   form.listenCount = undefined
   form.comment = ''
+  form.tags = []
+  tagInput.value = ''
 }
 
 function openCreateDialog() {
@@ -707,6 +761,7 @@ async function openEditDialog(item: AlbumPageItem) {
   form.listenDate = item.listenDate
   form.listenCount = item.listenCount
   form.comment = item.comment || ''
+  form.tags = normalizeTags(item.tags)
   
   // 获取详情以填充 genre、description、totalTracks 等字段
   try {
@@ -719,6 +774,7 @@ async function openEditDialog(item: AlbumPageItem) {
     }
     if (res.data?.record) {
       form.comment = res.data.record.comment || ''
+      form.tags = normalizeTags(res.data.record.tags)
     }
   } catch (e) {
     // 如果获取详情失败，至少保证基本字段已设置
@@ -727,6 +783,19 @@ async function openEditDialog(item: AlbumPageItem) {
   }
   
   dialogVisible.value = true
+}
+
+function handleAddTag() {
+  const value = tagInput.value.trim()
+  if (!value) return
+  if (!form.tags) form.tags = []
+  if (!form.tags.includes(value)) form.tags.push(value)
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!form.tags) return
+  form.tags = form.tags.filter(t => t !== tag)
 }
 
 const submitLoading = ref(false)
@@ -800,6 +869,7 @@ async function handleSubmit() {
         personalRating: form.personalRating,
         listenDate: form.listenDate,
         listenCount: form.listenCount,
+        tags: form.tags,
         comment: form.comment,
       })
       ElMessage.success('创建成功')
@@ -824,6 +894,7 @@ async function handleSubmit() {
           personalRating: form.personalRating,
           listenDate: form.listenDate,
           listenCount: form.listenCount,
+          tags: form.tags,
           comment: form.comment,
         }),
       ])
@@ -857,6 +928,51 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.tag-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-close-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.16);
+  color: #00d4ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tag-chip:hover .tag-close-btn {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.tag-close-btn:hover {
+  background: rgba(0, 212, 255, 0.25);
+}
+
 .music-page {
   min-height: 100%;
   animation: pageFadeIn 0.4s ease-out;

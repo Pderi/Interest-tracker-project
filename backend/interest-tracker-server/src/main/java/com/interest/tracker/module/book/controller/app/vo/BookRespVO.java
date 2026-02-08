@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 图书详情响应 VO
@@ -89,8 +90,8 @@ public class BookRespVO {
         @Schema(description = "评价", example = "很经典")
         private String comment;
 
-        @Schema(description = "标签（逗号分隔）", example = "经典,文学")
-        private String tags;
+        @Schema(description = "标签列表", example = "[\"经典\",\"文学\"]")
+        private List<String> tags;
     }
 
 }

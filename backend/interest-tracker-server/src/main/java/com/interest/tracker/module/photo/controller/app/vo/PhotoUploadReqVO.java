@@ -3,6 +3,8 @@ package com.interest.tracker.module.photo.controller.app.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 照片上传请求 VO
  *
@@ -18,8 +20,8 @@ public class PhotoUploadReqVO {
     @Schema(description = "照片描述", example = "拍摄于2025年1月")
     private String description;
 
-    @Schema(description = "标签（逗号分隔）", example = "风景,自然")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"风景\",\"自然\"]")
+    private List<String> tags;
 
     @Schema(description = "分类ID", example = "1")
     private Long categoryId;

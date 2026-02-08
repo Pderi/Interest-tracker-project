@@ -10,6 +10,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 更新观演记录请求 VO
@@ -45,6 +46,9 @@ public class ConcertRecordUpdateReqVO {
 
     @Schema(description = "评价", example = "很棒的演出")
     private String comment;
+
+    @Schema(description = "标签列表", example = "[\"摇滚\",\"经典\"]")
+    private List<String> tags;
 
 }
 

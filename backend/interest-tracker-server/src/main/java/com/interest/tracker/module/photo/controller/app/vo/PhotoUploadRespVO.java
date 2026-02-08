@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 照片上传响应 VO
@@ -31,6 +32,9 @@ public class PhotoUploadRespVO {
 
     @Schema(description = "图片高度（像素）", example = "1080")
     private Integer height;
+
+    @Schema(description = "标签列表", example = "[\"风景\",\"自然\"]")
+    private List<String> tags;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;

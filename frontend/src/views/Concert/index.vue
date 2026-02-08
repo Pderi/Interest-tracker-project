@@ -142,10 +142,19 @@
                     <span v-if="concert.concertDate"> · {{ formatDate(concert.concertDate) }}</span>
                   </p>
 
-                  <!-- 状态标签 -->
+                  <!-- 状态标签 + 自定义标签 -->
                   <div class="flex flex-wrap gap-2 mt-1">
                     <AnimatedTag variant="glow" class="concert-tag-item">
                       {{ getStatusLabel(concert.watchStatus) }}
+                    </AnimatedTag>
+                    <AnimatedTag
+                      v-for="(tag, tagIndex) in concert.tags?.filter(tag => !!tag && !!tag.trim())"
+                      :key="tag"
+                      variant="glow"
+                      :animated="tagIndex % 2 === 0"
+                      class="concert-tag-item"
+                    >
+                      {{ tag }}
                     </AnimatedTag>
                   </div>
 
@@ -465,10 +474,32 @@
           </el-form-item>
 
           <el-form-item label="标签">
-            <el-input
-              v-model="form.tags"
-              placeholder="多个标签使用逗号分隔"
-            />
+            <div class="tag-input-wrapper">
+              <el-input
+                v-model="tagInput"
+                placeholder="输入一个标签后按回车添加"
+                @keyup.enter.prevent="handleAddTag"
+              />
+              <div class="tag-list" v-if="normalizedFormTags.length">
+                <div
+                  v-for="tag in normalizedFormTags"
+                  :key="tag"
+                  class="tag-chip"
+                >
+                  <AnimatedTag>
+                    {{ tag }}
+                  </AnimatedTag>
+                  <button
+                    class="tag-close-btn"
+                    type="button"
+                    @click.stop="removeTag(tag)"
+                    aria-label="删除标签"
+                  >
+                    <el-icon><Close /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
           </el-form-item>
 
           <el-form-item label="评价">
@@ -593,7 +624,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete, UploadFilled, Check, Loading } from '@element-plus/icons-vue'
+import { Plus, Headset, StarFilled, Search, ChatLineRound, Picture, Upload, Delete, UploadFilled, Check, Loading, Close } from '@element-plus/icons-vue'
 import { getConcertPage, createConcert, getConcertDetail, deleteConcertRecord, updateConcertRecord, updateConcert } from '@/api/concert'
 import { uploadCoverImage, uploadPhoto, getPhotoPage } from '@/api/photo'
 import type { Photo } from '@/api/photo'
@@ -800,7 +831,7 @@ const form = reactive<{
   watchDate?: string
   ticketPrice?: number
   seatInfo?: string
-  tags?: string
+  tags?: string[]
   comment?: string
 }>({
   artist: '',
@@ -827,7 +858,7 @@ function resetForm() {
   form.watchDate = ''
   form.ticketPrice = undefined
   form.seatInfo = ''
-  form.tags = ''
+  form.tags = []
   form.comment = ''
 }
 
@@ -857,6 +888,7 @@ async function openEditDialog(item: ConcertPageItem) {
   form.ticketPrice = item.ticketPrice
   form.seatInfo = item.seatInfo
   form.comment = item.comment || ''
+  form.tags = normalizeTags(item.tags)
   
   // 获取详情以填充 description、tags 等字段
   try {
@@ -865,7 +897,7 @@ async function openEditDialog(item: ConcertPageItem) {
       form.description = res.data.concert.description || ''
     }
     if (res.data?.record) {
-      form.tags = res.data.record.tags || ''
+      form.tags = normalizeTags(res.data.record.tags)
       form.comment = res.data.record.comment || ''
     }
   } catch (e) {
@@ -874,6 +906,30 @@ async function openEditDialog(item: ConcertPageItem) {
   }
   
   dialogVisible.value = true
+}
+
+function normalizeTags(tags?: string[]) {
+  return (tags || []).map(tag => (tag ?? '').trim()).filter(tag => tag.length > 0)
+}
+
+const tagInput = ref('')
+const normalizedFormTags = computed(() => normalizeTags(form.tags))
+
+function handleAddTag() {
+  const value = tagInput.value.trim()
+  if (!value) return
+  if (!form.tags) {
+    form.tags = []
+  }
+  if (!form.tags.includes(value)) {
+    form.tags.push(value)
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!form.tags) return
+  form.tags = form.tags.filter(t => t !== tag)
 }
 
 const submitLoading = ref(false)

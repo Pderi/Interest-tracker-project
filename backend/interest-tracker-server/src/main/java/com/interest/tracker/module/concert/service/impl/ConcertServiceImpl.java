@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,6 +64,9 @@ public class ConcertServiceImpl implements ConcertService {
         ConcertRecordDO recordDO = BeanUtils.toBean(reqVO, ConcertRecordDO.class);
         recordDO.setUserId(userId);
         recordDO.setConcertId(concertDO.getId());
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
         // 设置默认观演状态
         if (recordDO.getWatchStatus() == null) {
             recordDO.setWatchStatus(1); // 默认"想看"
@@ -123,6 +127,9 @@ public class ConcertServiceImpl implements ConcertService {
         if (updateDO.getComment() != null) {
             recordDO.setComment(updateDO.getComment());
         }
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
     }
 
     /**
@@ -158,6 +165,8 @@ public class ConcertServiceImpl implements ConcertService {
         ConcertRespVO.RecordInfo recordInfo = BeanUtils.toBean(recordDO, ConcertRespVO.RecordInfo.class);
         respVO.setConcert(concertInfo);
         respVO.setRecord(recordInfo);
+        // 标签拆分
+        recordInfo.setTags(splitToList(recordDO.getTags()));
 
         return respVO;
     }
@@ -208,6 +217,7 @@ public class ConcertServiceImpl implements ConcertService {
                     }
                     // 填充评价
                     vo.setComment(record.getComment());
+                    vo.setTags(splitToList(record.getTags()));
 
                     return vo;
                 })
@@ -307,6 +317,19 @@ public class ConcertServiceImpl implements ConcertService {
             throw exception(CONCERT_RECORD_NOT_EXISTS);
         }
         return recordDO;
+    }
+
+    /**
+     * 将竖线分隔的标签拆成非空列表
+     */
+    private List<String> splitToList(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("\\|"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
 }

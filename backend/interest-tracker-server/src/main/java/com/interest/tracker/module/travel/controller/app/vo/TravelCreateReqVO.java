@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
@@ -61,8 +62,8 @@ public class TravelCreateReqVO {
     @Schema(description = "费用", example = "5000.00")
     private BigDecimal expense;
 
-    @Schema(description = "标签（逗号分隔）", example = "历史,文化")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"历史\",\"文化\"]")
+    private List<String> tags;
 
     @Schema(description = "评价", example = "很棒的旅行")
     private String comment;

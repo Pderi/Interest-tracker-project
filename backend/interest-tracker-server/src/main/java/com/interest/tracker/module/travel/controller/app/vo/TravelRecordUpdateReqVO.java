@@ -10,6 +10,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 更新旅游记录请求 VO
@@ -45,6 +46,9 @@ public class TravelRecordUpdateReqVO {
 
     @Schema(description = "评价", example = "很棒的旅行")
     private String comment;
+
+    @Schema(description = "标签列表", example = "[\"历史\",\"文化\"]")
+    private List<String> tags;
 
 }
 

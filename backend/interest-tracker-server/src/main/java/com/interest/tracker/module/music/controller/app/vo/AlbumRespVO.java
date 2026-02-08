@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 专辑详情响应 VO
@@ -79,8 +80,8 @@ public class AlbumRespVO {
         @Schema(description = "评价", example = "很好听")
         private String comment;
 
-        @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
-        private String tags;
+        @Schema(description = "标签列表", example = "[\"摇滚\",\"经典\"]")
+        private List<String> tags;
     }
 
 }

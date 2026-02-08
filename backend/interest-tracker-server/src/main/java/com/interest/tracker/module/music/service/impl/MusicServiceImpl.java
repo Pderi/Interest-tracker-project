@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,6 +64,9 @@ public class MusicServiceImpl implements MusicService {
         AlbumRecordDO recordDO = BeanUtils.toBean(reqVO, AlbumRecordDO.class);
         recordDO.setUserId(userId);
         recordDO.setAlbumId(albumDO.getId());
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
         // 设置默认听歌状态
         if (recordDO.getListenStatus() == null) {
             recordDO.setListenStatus(1); // 默认"想听"
@@ -120,6 +124,9 @@ public class MusicServiceImpl implements MusicService {
         if (updateDO.getComment() != null) {
             recordDO.setComment(updateDO.getComment());
         }
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
     }
 
     /**
@@ -153,6 +160,7 @@ public class MusicServiceImpl implements MusicService {
         AlbumRespVO respVO = new AlbumRespVO();
         AlbumRespVO.AlbumInfo albumInfo = BeanUtils.toBean(albumDO, AlbumRespVO.AlbumInfo.class);
         AlbumRespVO.RecordInfo recordInfo = BeanUtils.toBean(recordDO, AlbumRespVO.RecordInfo.class);
+        recordInfo.setTags(splitToList(recordDO.getTags()));
         respVO.setAlbum(albumInfo);
         respVO.setRecord(recordInfo);
 
@@ -203,6 +211,7 @@ public class MusicServiceImpl implements MusicService {
                     }
                     // 填充评价
                     vo.setComment(record.getComment());
+                    vo.setTags(splitToList(record.getTags()));
 
                     return vo;
                 })
@@ -299,6 +308,19 @@ public class MusicServiceImpl implements MusicService {
             throw exception(ALBUM_RECORD_NOT_EXISTS);
         }
         return recordDO;
+    }
+
+    /**
+     * 将竖线分隔的标签拆成非空列表
+     */
+    private List<String> splitToList(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("\\|"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
 }

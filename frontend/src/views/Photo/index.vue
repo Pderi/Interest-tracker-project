@@ -136,9 +136,9 @@
             </div>
             
             <!-- 标签 -->
-              <div v-if="photo.tags" class="absolute top-3 left-3 right-3 flex flex-wrap gap-2 photo-tags">
+            <div v-if="photo.tags && photo.tags.length" class="absolute top-3 left-3 right-3 flex flex-wrap gap-2 photo-tags">
               <el-tag
-                  v-for="tag in getTags(photo.tags).slice(0, 2)"
+                v-for="tag in photo.tags.filter(t => !!t && !!t.trim()).slice(0, 2)"
                 :key="tag"
                 type="info"
                 size="small"
@@ -235,10 +235,32 @@
             />
           </el-form-item>
           <el-form-item label="标签">
-            <el-input
-              v-model="uploadForm.tags"
-              placeholder="用逗号分隔，如：风景,自然（可选）"
-            />
+            <div class="tag-input-wrapper">
+              <el-input
+                v-model="tagInput"
+                placeholder="输入一个标签后按回车添加（可选）"
+                @keyup.enter.prevent="handleAddTag"
+              />
+              <div class="tag-list" v-if="normalizedFormTags.length">
+                <div
+                  v-for="tag in normalizedFormTags"
+                  :key="tag"
+                  class="tag-chip"
+                >
+                  <AnimatedTag>
+                    {{ tag }}
+                  </AnimatedTag>
+                  <button
+                    class="tag-close-btn"
+                    type="button"
+                    @click.stop="removeTag(tag)"
+                    aria-label="删除标签"
+                  >
+                    <el-icon><Close /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item label="分类">
             <el-select v-model="uploadForm.categoryId" placeholder="选择分类（可选）" clearable>
@@ -468,7 +490,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Picture, Location, UploadFilled, FolderOpened, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Picture, Location, UploadFilled, FolderOpened, Edit, Delete, Close } from '@element-plus/icons-vue'
 import { 
   AnimatedButton, 
   AnimatedCard,
@@ -539,10 +561,14 @@ const editingCategoryId = ref<number | null>(null)
 const uploadForm = ref<PhotoUploadReq>({
   title: '',
   description: '',
-  tags: '',
+  tags: [],
   categoryId: undefined,
   location: '',
 })
+
+const tagInput = ref('')
+const normalizeTags = (tags?: string[]) => (tags || []).map(t => (t ?? '').trim()).filter(t => t.length > 0)
+const normalizedFormTags = computed(() => normalizeTags(uploadForm.value.tags))
 
 // 分类表单
 const categoryForm = ref<PhotoCategoryCreateReq>({
@@ -647,10 +673,21 @@ const getPhotoUrl = (photo: PhotoPageItem) => {
   return photo.thumbnailPath || photo.filePath
 }
 
-// 获取标签数组
-const getTags = (tags?: string): string[] => {
-  if (!tags) return []
-  return tags.split(',').filter(t => t.trim())
+function handleAddTag() {
+  const value = tagInput.value.trim()
+  if (!value) return
+  if (!uploadForm.value.tags) {
+    uploadForm.value.tags = []
+  }
+  if (!uploadForm.value.tags.includes(value)) {
+    uploadForm.value.tags.push(value)
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!uploadForm.value.tags) return
+  uploadForm.value.tags = uploadForm.value.tags.filter(t => t !== tag)
 }
 
 // 格式化日期
@@ -683,10 +720,11 @@ const openUploadDialog = () => {
   uploadForm.value = {
     title: '',
     description: '',
-    tags: '',
+    tags: [],
     categoryId: undefined,
     location: '',
   }
+  tagInput.value = ''
   selectedFiles.value = []
   if (uploadRef.value) {
     uploadRef.value.clearFiles()
@@ -904,6 +942,51 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.tag-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-close-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.16);
+  color: #00d4ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tag-chip:hover .tag-close-btn {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.tag-close-btn:hover {
+  background: rgba(0, 212, 255, 0.25);
+}
+
 .photo-page {
   min-height: 100%;
   animation: pageFadeIn 0.4s ease-out;

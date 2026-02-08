@@ -161,11 +161,11 @@
 
                   <!-- 标签 -->
                   <div
-                    v-if="movie.tags"
+                  v-if="movie.tags && movie.tags.length"
                     class="flex flex-wrap gap-2 mt-1 movie-tags"
                   >
                     <AnimatedTag
-                      v-for="(tag, tagIndex) in movie.tags.split(',')"
+                      v-for="(tag, tagIndex) in movie.tags.filter(tag => !!tag && !!tag.trim())"
                       :key="tag"
                       variant="glow"
                       :animated="tagIndex % 2 === 0"
@@ -392,10 +392,32 @@
           </el-form-item>
 
           <el-form-item label="标签">
-            <el-input
-              v-model="form.tags"
-              placeholder="多个标签使用逗号分隔，例如：科幻,经典"
-            />
+            <div class="tag-input-wrapper">
+              <el-input
+                v-model="tagInput"
+                placeholder="输入一个标签后按回车添加"
+                @keyup.enter.prevent="handleAddTag"
+              />
+              <div class="tag-list" v-if="normalizedFormTags.length">
+                <div
+                  v-for="tag in normalizedFormTags"
+                  :key="tag"
+                  class="tag-chip"
+                >
+                  <AnimatedTag>
+                    {{ tag }}
+                  </AnimatedTag>
+                  <button
+                    class="tag-close-btn"
+                    type="button"
+                    @click.stop="removeTag(tag)"
+                    aria-label="删除标签"
+                  >
+                    <el-icon><Close /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
           </el-form-item>
 
           <el-form-item label="评价">
@@ -431,7 +453,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, VideoPlay, StarFilled, Search, ChatLineRound, UploadFilled, Delete } from '@element-plus/icons-vue'
+import { Plus, VideoPlay, StarFilled, Search, ChatLineRound, UploadFilled, Delete, Close } from '@element-plus/icons-vue'
 import { getMoviePage, createMovie, updateMovieRecord, deleteMovieRecord } from '@/api/movie'
 import { uploadCoverImage } from '@/api/photo'
 import type { MoviePageItem } from '@/types/api'
@@ -615,12 +637,15 @@ const form = reactive<{
   watchStatus?: number
   personalRating?: number
   watchDate?: string
-  tags?: string
+  tags?: string[]
   comment?: string
 }>({
   title: '',
   type: null,
 })
+
+const tagInput = ref('')
+const normalizedFormTags = computed(() => normalizeTags(form.tags))
 
 const rules: FormRules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
@@ -635,14 +660,19 @@ function resetForm() {
   form.watchStatus = 1
   form.personalRating = undefined
   form.watchDate = ''
-  form.tags = ''
+  form.tags = []
   form.comment = ''
+  tagInput.value = ''
 }
 
 function openCreateDialog() {
   dialogMode.value = 'create'
   resetForm()
   dialogVisible.value = true
+}
+
+function normalizeTags(tags?: string[]) {
+  return (tags || []).map(tag => (tag ?? '').trim()).filter(tag => tag.length > 0)
 }
 
 function openEditDialog(item: MoviePageItem) {
@@ -654,9 +684,26 @@ function openEditDialog(item: MoviePageItem) {
   form.watchStatus = item.watchStatus
   form.personalRating = item.personalRating
   form.watchDate = item.watchDate
-  form.tags = item.tags
+  form.tags = normalizeTags(item.tags)
   form.comment = '' // 列表不返回 comment，编辑时可在详情页扩展，这里先留空
   dialogVisible.value = true
+}
+
+function handleAddTag() {
+  const value = tagInput.value.trim()
+  if (!value) return
+  if (!form.tags) {
+    form.tags = []
+  }
+  if (!form.tags.includes(value)) {
+    form.tags.push(value)
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!form.tags) return
+  form.tags = form.tags.filter(t => t !== tag)
 }
 
 const submitLoading = ref(false)
@@ -768,6 +815,51 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.tag-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-close-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.16);
+  color: #00d4ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tag-chip:hover .tag-close-btn {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.tag-close-btn:hover {
+  background: rgba(0, 212, 255, 0.25);
+}
+
 .movie-page {
   min-height: 100%;
   animation: pageFadeIn 0.4s ease-out;

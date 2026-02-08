@@ -177,11 +177,11 @@
 
                   <!-- 标签 -->
                   <div
-                    v-if="book.tags"
+                    v-if="book.tags && book.tags.length"
                     class="flex flex-wrap gap-2 mt-1 book-tags"
                   >
                     <AnimatedTag
-                      v-for="(tag, tagIndex) in book.tags.split(',')"
+                      v-for="(tag, tagIndex) in book.tags.filter(tag => !!tag && !!tag.trim())"
                       :key="tag"
                       variant="glow"
                       :animated="tagIndex % 2 === 0"
@@ -404,6 +404,35 @@
             />
           </el-form-item>
 
+          <el-form-item label="标签">
+            <div class="tag-input-wrapper">
+              <el-input
+                v-model="tagInput"
+                placeholder="输入一个标签后按回车添加"
+                @keyup.enter.prevent="handleAddTag"
+              />
+              <div class="tag-list" v-if="normalizedFormTags.length">
+                <div
+                  v-for="tag in normalizedFormTags"
+                  :key="tag"
+                  class="tag-chip"
+                >
+                  <AnimatedTag>
+                    {{ tag }}
+                  </AnimatedTag>
+                  <button
+                    class="tag-close-btn"
+                    type="button"
+                    @click.stop="removeTag(tag)"
+                    aria-label="删除标签"
+                  >
+                    <el-icon><Close /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </el-form-item>
+
           <el-form-item label="评价">
             <el-input
               v-model="form.comment"
@@ -434,9 +463,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElDialog, ElForm, ElFormItem, ElInput, ElInputNumber, ElButton, FormInstance, FormRules } from 'element-plus'
-import { Plus, Document, StarFilled, Search, ChatLineRound, UploadFilled, Delete } from '@element-plus/icons-vue'
+import { Plus, Document, StarFilled, Search, ChatLineRound, UploadFilled, Delete, Close } from '@element-plus/icons-vue'
 import { getBookPage, createBook, updateBookRecord, deleteBookRecord } from '@/api/book'
 import { uploadCoverImage } from '@/api/photo'
 import type { BookPageItem, BookCreateReq, BookRecordUpdateReq } from '@/types/api'
@@ -614,9 +643,16 @@ const form = reactive<{
   personalRating?: number
   comment?: string
   readStatus?: number
+  tags?: string[]
 }>({
   title: '',
 })
+
+const tagInput = ref('')
+function normalizeTags(tags?: string[]) {
+  return (tags || []).map(t => (t ?? '').trim()).filter(t => t.length > 0)
+}
+const normalizedFormTags = computed(() => normalizeTags(form.tags))
 
 const rules: FormRules = {
   title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
@@ -632,6 +668,8 @@ function resetForm() {
   form.personalRating = undefined
   form.comment = ''
   form.readStatus = 1
+  form.tags = []
+  tagInput.value = ''
 }
 
 function openCreateDialog() {
@@ -649,7 +687,21 @@ function openEditDialog(item: BookPageItem) {
   form.readStatus = item.readStatus
   form.personalRating = item.personalRating
   form.comment = item.comment || ''
+  form.tags = normalizeTags(item.tags)
   dialogVisible.value = true
+}
+
+function handleAddTag() {
+  const value = tagInput.value.trim()
+  if (!value) return
+  if (!form.tags) form.tags = []
+  if (!form.tags.includes(value)) form.tags.push(value)
+  tagInput.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!form.tags) return
+  form.tags = form.tags.filter(t => t !== tag)
 }
 
 const submitLoading = ref(false)
@@ -719,6 +771,7 @@ async function handleSubmit() {
         readStatus: form.readStatus,
         personalRating: form.personalRating,
         comment: form.comment,
+        tags: form.tags,
       })
       ElMessage.success('创建成功')
     } else if (dialogMode.value === 'edit' && form.recordId) {
@@ -728,6 +781,7 @@ async function handleSubmit() {
         personalRating: form.personalRating,
         coverUrl: form.coverUrl,
         comment: form.comment,
+        tags: form.tags,
       })
       ElMessage.success('更新成功')
     }
@@ -759,6 +813,51 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.tag-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-close-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.16);
+  color: #00d4ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tag-chip:hover .tag-close-btn {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.tag-close-btn:hover {
+  background: rgba(0, 212, 255, 0.25);
+}
+
 .book-page {
   padding: 20px;
   min-height: 100%;

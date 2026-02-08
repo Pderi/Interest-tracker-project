@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -89,11 +90,20 @@ public class MovieServiceImpl implements MovieService {
 
         // 3. 创建观看记录
         MovieRecordDO recordDO = BeanUtils.toBean(reqVO, MovieRecordDO.class);
+        // 处理标签：前端传数组，数据库存竖线分隔的字符串
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
         recordDO.setUserId(userId);
         recordDO.setMovieId(movieDO.getId());
         // 设置默认观看状态
         if (recordDO.getWatchStatus() == null) {
             recordDO.setWatchStatus(1); // 默认"想看"
+        }
+        // 当状态为“已看”且未填日期时，自动补今天
+        if (WatchStatusEnum.WATCHED.getValue().equals(recordDO.getWatchStatus())
+                && recordDO.getWatchDate() == null) {
+            recordDO.setWatchDate(LocalDate.now());
         }
         movieRecordMapper.insert(recordDO);
 
@@ -158,8 +168,9 @@ public class MovieServiceImpl implements MovieService {
         if (updateDO.getComment() != null) {
             recordDO.setComment(updateDO.getComment());
         }
-        if (updateDO.getTags() != null) {
-            recordDO.setTags(updateDO.getTags());
+        // 标签单独处理：前端传数组，数据库存竖线分隔的字符串
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
         }
     }
 
@@ -194,6 +205,11 @@ public class MovieServiceImpl implements MovieService {
         MovieRespVO respVO = new MovieRespVO();
         MovieRespVO.MovieInfo movieInfo = BeanUtils.toBean(movieDO, MovieRespVO.MovieInfo.class);
         MovieRespVO.RecordInfo recordInfo = BeanUtils.toBean(recordDO, MovieRespVO.RecordInfo.class);
+        // 拆分影视类型、演员为列表（仅在有值时处理）
+        movieInfo.setGenre(splitToList(movieDO.getGenre()));
+        movieInfo.setActors(splitToList(movieDO.getActors()));
+        // 拆分标签为列表
+        recordInfo.setTags(splitToList(recordDO.getTags()));
         respVO.setMovie(movieInfo);
         respVO.setRecord(recordInfo);
 
@@ -241,6 +257,8 @@ public class MovieServiceImpl implements MovieService {
                     }
                     // 填充评价
                     vo.setComment(record.getComment());
+                    // 拆分标签为列表
+                    vo.setTags(splitToList(record.getTags()));
 
                     return vo;
                 })
@@ -342,6 +360,19 @@ public class MovieServiceImpl implements MovieService {
             throw exception(MOVIE_RECORD_NOT_EXISTS);
         }
         return recordDO;
+    }
+
+    /**
+     * 将竖线分隔的字符串拆成非空列表
+     */
+    private List<String> splitToList(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("\\|"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
     /**

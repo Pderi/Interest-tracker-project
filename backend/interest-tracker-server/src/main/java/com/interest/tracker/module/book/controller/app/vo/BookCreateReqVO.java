@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
@@ -45,6 +46,9 @@ public class BookCreateReqVO {
 
     @Schema(description = "评价", example = "很经典")
     private String comment;
+
+    @Schema(description = "标签列表", example = "[\"经典\",\"文学\"]")
+    private List<String> tags;
 
 }
 

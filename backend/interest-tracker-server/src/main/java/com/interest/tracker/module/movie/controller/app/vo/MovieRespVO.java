@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 影视详情响应 VO
@@ -36,8 +37,8 @@ public class MovieRespVO {
         @Schema(description = "类型：1-电影 2-电视剧", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED, example = "1")
         private Integer type;
 
-        @Schema(description = "类型（动作、科幻等，逗号分隔）", example = "动作,悬疑")
-        private String genre;
+        @Schema(description = "类型列表（动作、科幻等）", example = "[\"动作\",\"悬疑\"]")
+        private List<String> genre;
 
         @Schema(description = "上映年份", example = "1999")
         private Integer releaseYear;
@@ -45,8 +46,8 @@ public class MovieRespVO {
         @Schema(description = "导演", example = "大卫·芬奇")
         private String director;
 
-        @Schema(description = "演员（逗号分隔）", example = "爱德华·诺顿,布拉德·皮特")
-        private String actors;
+        @Schema(description = "演员列表", example = "[\"爱德华·诺顿\",\"布拉德·皮特\"]")
+        private List<String> actors;
 
         @Schema(description = "简介", example = "简介...")
         private String description;
@@ -88,8 +89,8 @@ public class MovieRespVO {
         @Schema(description = "评价", example = "很好看")
         private String comment;
 
-        @Schema(description = "标签（逗号分隔）", example = "动作,悬疑")
-        private String tags;
+        @Schema(description = "标签列表", example = "[\"动作\",\"悬疑\"]")
+        private List<String> tags;
     }
 
 }

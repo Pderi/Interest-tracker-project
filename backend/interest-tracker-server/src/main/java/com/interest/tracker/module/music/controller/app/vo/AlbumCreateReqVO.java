@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
@@ -49,8 +50,8 @@ public class AlbumCreateReqVO {
     @Schema(description = "个人评分（0-10）", example = "8.5")
     private BigDecimal personalRating;
 
-    @Schema(description = "标签（逗号分隔）", example = "摇滚,经典")
-    private String tags;
+    @Schema(description = "标签列表", example = "[\"摇滚\",\"经典\"]")
+    private List<String> tags;
 
     @Schema(description = "评价", example = "很好听")
     private String comment;

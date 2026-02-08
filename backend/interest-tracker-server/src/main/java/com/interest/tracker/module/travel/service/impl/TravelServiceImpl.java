@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -69,6 +70,9 @@ public class TravelServiceImpl implements TravelService {
         TravelRecordDO recordDO = BeanUtils.toBean(reqVO, TravelRecordDO.class);
         recordDO.setUserId(userId);
         recordDO.setPlaceId(placeDO.getId());
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
         // 设置默认旅游状态
         if (recordDO.getTravelStatus() == null) {
             recordDO.setTravelStatus(1); // 默认"想去"
@@ -129,6 +133,9 @@ public class TravelServiceImpl implements TravelService {
         if (updateDO.getComment() != null) {
             recordDO.setComment(updateDO.getComment());
         }
+        if (reqVO.getTags() != null) {
+            recordDO.setTags(String.join("|", reqVO.getTags()));
+        }
     }
 
     /**
@@ -164,6 +171,7 @@ public class TravelServiceImpl implements TravelService {
         TravelRespVO.RecordInfo recordInfo = BeanUtils.toBean(recordDO, TravelRespVO.RecordInfo.class);
         respVO.setPlace(placeInfo);
         respVO.setRecord(recordInfo);
+        recordInfo.setTags(splitToList(recordDO.getTags()));
 
         return respVO;
     }
@@ -212,6 +220,7 @@ public class TravelServiceImpl implements TravelService {
                     }
                     // 填充评价
                     vo.setComment(record.getComment());
+                    vo.setTags(splitToList(record.getTags()));
 
                     return vo;
                 })
@@ -311,6 +320,19 @@ public class TravelServiceImpl implements TravelService {
             throw exception(TRAVEL_RECORD_NOT_EXISTS);
         }
         return recordDO;
+    }
+
+    /**
+     * 将竖线分隔的标签拆成非空列表
+     */
+    private List<String> splitToList(String value) {
+        if (value == null || value.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split("\\|"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
 }
